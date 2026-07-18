@@ -234,27 +234,49 @@ function planMaster(){
 }
 
 // Comandante "E" — orquestrador da estação (estilo ULTRON)
-const CORE_TASKS=['A coordenar prioridades','A aprovar decisões','A alinhar agentes','A otimizar rotas','A auditar salas','A planeiar expansão'];
+const CORE_TASKS=['A coordenar prioridades','A aprovar decisões','A alinhar agentes','A otimizar rotas','A auditar salas','A planeiar expansão','A gerir Sala 2 (Negócios)'];
 function coreTick(){
   const c=state.core;
-  // ganha XP por ciclo de sim; acelera com nº de agentes
-  c.xp += state.agents.length*0.5 + 0.2;
+  // ganha XP por ciclo de sim; acelera com nº de agentes + planos
+  c.xp += state.agents.length*0.5 + state.plans.length*0.3 + 0.2;
   if(c.xp>=100){c.xp=0;c.level++;
     c.buff=Math.min(2.0,1+c.level*0.05);
     log(`⚡ E (CORE) subiu para Lv.${c.level} — buff de estação x${c.buff.toFixed(2)}`,'e');
   }
   // emite ordem periodicamente
-  if(state.simSeconds%25===0 && state.agents.length){
+  if(state.simSeconds%25===0){
     c.orders++;
     const cmds=[
       'E: priorizar snipes virais na Sala 1.',
-      'E: redirecionar fluxo para a Sala 2 em breve.',
       'E: manter silêncio. Deixar os escravos trabalhar.',
       'E: auditar produtividade dos criadores.',
       `E: ${state.agents.length} operativos alinhados ao objetivo $2B.`
     ];
+    // ordens específicas de negócio (Sala 2)
+    if(state.unlocked.biz && state.plans.length){
+      const m=planMaster();
+      cmds.push(`E: ${m.n} planos ativos · ${m.auto} auto-sustentáveis · risco médio ${m.risk.toFixed(0)}%.`);
+      const best=state.plans.slice().sort((a,b)=>b.progress-a.progress)[0];
+      const worst=state.plans.slice().sort((a,b)=>b.risk-a.risk)[0];
+      if(best && best.status!=='AUTO-SUSTENTÁVEL') cmds.push(`E: acelerar "${best.name}" — ${(best.progress*100).toFixed(0)}% p/ auto-sustentável.`);
+      if(worst && worst.risk>60) cmds.push(`E: mitigar risco em "${worst.name}" (${worst.risk}%).`);
+    }
     c.status=CORE_TASKS[rint(0,CORE_TASKS.length-1)];
     log(cmds[rint(0,cmds.length-1)],'e');
+  }
+}
+// a "E" aprova planos e reduz risco (governança da Sala 2)
+function coreGovernBiz(){
+  if(!state.unlocked.biz) return;
+  // a cada 50 ciclos, E audita: reduz risco dos planos e aprova Auto-Sustentáveis
+  if(state.simSeconds%50===0 && state.plans.length){
+    state.plans.forEach(p=>{
+      p.risk=Math.max(5,p.risk-1); // governança baixa o risco lentamente
+      if(p.progress>=1 && p.status!=='AUTO-SUSTENTÁVEL'){
+        p.status='AUTO-SUSTENTÁVEL';
+        log(`✅ E aprovou "${p.name}" como AUTO-SUSTENTÁVEL.`,'e');
+      }
+    });
   }
 }
 function uid(){return Math.random().toString(36).slice(2,8);}
@@ -439,6 +461,7 @@ function tick(){
   state.simSeconds+=state.speed;
   coreTick();
   planTick();
+  coreGovernBiz();
   let cv2=0,cm=0;
   state.agents.forEach(a=>{
     if(a.busy>0){a.busy-=state.speed;
@@ -494,6 +517,7 @@ function openBiz(){
       <input type="file" id="biz-input" accept=".json,.md,.txt,.csv" style="display:none;">
       <span id="biz-file" style="font-size:11px;color:var(--ink-faint);"></span>
     </div>
+    <div class="room-sub" style="font-size:10px;color:var(--green);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">⚡ Gerido pelo CORE "E" — aprova planos e mitiga risco</div>
     <div class="master-grid" id="biz-master"></div>
     <div id="biz-plans"></div>`;
   document.getElementById('btn-new-plan').addEventListener('click',()=>{state.plans.push(makePlan());log('📊 Novo plano de negócio criado: '+state.plans[state.plans.length-1].name,'e');renderBiz();});
