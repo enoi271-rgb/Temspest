@@ -73,6 +73,18 @@
   .agent.on .agent-task{color:var(--amber);}
   .bar-mini{height:4px;background:#0e110b;border:1px solid var(--line);margin-top:3px;}
   .bar-mini > i{display:block;height:100%;background:var(--rc,#8fb35a);}
+  .agent.await{border-color:var(--amber);background:#1c160c;}
+  .agent.await .agent-task{color:var(--amber);}
+  .agent.auto.on{border-color:var(--green);background:#0e140c;}
+  .notif{font-size:9px;color:var(--amber);margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .btn-app,.btn-rej{font-family:'Teko',sans-serif;font-size:12px;padding:2px 8px;border-radius:2px;cursor:pointer;border:1px solid;}
+  .btn-app{background:var(--green-dim);border-color:var(--green);color:#eef4e2;}
+  .btn-rej{background:transparent;border-color:var(--red);color:var(--red);}
+  .plan-doc{border:1px solid var(--amber);background:#0e110b;padding:8px;margin-bottom:8px;font-size:10px;}
+  .plan-doc h4{margin:0 0 4px;color:var(--amber);font-family:'Teko',sans-serif;font-size:14px;}
+  .plan-doc pre{white-space:pre-wrap;color:var(--ink-dim);font-size:9px;margin:0 0 6px;max-height:90px;overflow:auto;}
+  .pending-box{border:1px solid var(--line);background:var(--bg-1);border-radius:2px;padding:12px;margin-bottom:16px;}
+  .pending-box.ok{opacity:0.5;}
   .term-foot{font-size:9px;color:var(--rc,#8fb35a);letter-spacing:0.04em;margin-top:4px;padding-top:4px;border-top:1px solid var(--line);text-transform:uppercase;}
   .layout{display:grid;grid-template-columns:1fr 330px;gap:16px;margin-top:16px;}
   @media(max-width:880px){.layout{grid-template-columns:1fr;}}
@@ -135,6 +147,24 @@
 
   <div class="rooms" id="rooms"></div>
 
+  <div class="panel" id="clip-panel" style="margin-top:16px;">
+    <div class="panel-head"><span class="panel-num">R1</span><span class="display panel-title">Clip ao vivo</span></div>
+    <video id="clip-r1" width="100%" height="220" controls style="background:#000;display:block;border:1px solid var(--line);"></video>
+    <input type="file" id="clip-in" accept="video/*" style="margin-top:8px;font-size:10px;color:var(--ink-dim);width:100%;">
+    <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;">Carrega um clip (ex: da pasta clips/) para projetar na Sala 1.</div>
+  </div>
+
+  <div class="panel pending-box" id="pending-box">
+    <div class="panel-head"><span class="panel-num">OK</span><span class="display panel-title">Aprovacao necessaria</span>
+      <button class="btn ghost" id="btn-approve-all" style="margin-left:auto;font-size:13px;padding:3px 10px;">Aprovar tudo</button></div>
+    <div id="pending"><div style="font-size:10px;color:var(--ink-faint)">Sem notificacoes. Os agentes trabalham e param para validacao.</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span class="panel-num">DOC</span><span class="display panel-title">Planos de Negocio</span></div>
+    <div id="plans"><div style="font-size:10px;color:var(--ink-faint)">A sala de Negocios gera documentos para aprovacao.</div></div>
+  </div>
+
   <div class="layout">
     <div>
       <div class="panel">
@@ -163,13 +193,14 @@ const CALLSIGN=['VECTOR','FORCE','PULSE','QUANTUM','QUASAR','ATLAS','QUILL','SOL
 
 // ===== DEFINICAO DAS SALAS (funcao + agentes proprios) =====
 const ROOM_DEFS=[
-  { id:'r1', num:'R1', name:'SALA DOS CRIADORES', func:'Forjar conteudo Ghost', color:'143,179,90',
-    roles:['SCOUT','EDITOR','PUBLISHER','CURATOR'],
+  { id:'r1', num:'R1', name:'SALA DE CRIACAO', func:'Redes sociais · shorts · cortes · hashtags · textos que atraem views', color:'143,179,90',
+    roles:['SCOUT','EDITOR','PUBLISHER','CURATOR','COPYWRITER'],
     tasks:{
-      SCOUT:['a cacar clips virais','a scannear Warzone meta','a gravar snipe'],
-      EDITOR:['a editar clutch','a cortar montage','a fazer thumbnail'],
-      PUBLISHER:['a subir Reel','a agendar post','a publicar no IG'],
-      CURATOR:['a selecionar clip','a validar qualidade','a arquivar top']
+      SCOUT:['a cacar clips virais','a scannear Warzone meta','a achar tendencias TikTok','a gravar snipe'],
+      EDITOR:['a cortar shorts','a editar montage','a fazer Reels','a cortar clutch'],
+      PUBLISHER:['a subir short','a publicar Reel','a gerir IG/TikTok','a agendar post'],
+      CURATOR:['a selecionar clip','a validar qualidade','a analisar retencao','a arquivar top'],
+      COPYWRITER:['a escrever hashtags','a criar legenda viral','a testar textos que atraem views','a optimizar titulo']
     } },
   { id:'r2', num:'R2', name:'NEGOCIOS ANGOLA', func:'Gerar receita de negocio', color:'217,154,62',
     roles:['STRATEGIST','RESEARCHER','MONETIZER','ANALYST'],
@@ -193,10 +224,13 @@ function randTask(room,role){const t=room.tasks[role];return t[Math.floor(Math.r
 function uid(){return Math.random().toString(36).slice(2,8);}
 function rint(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 
+const CUT_ROLES=['EDITOR','RETOUCH','THUMBNAIL'];
 function makeAgent(room,role){
+  const auto=CUT_ROLES.includes(role);
   return{ id:uid(), roomId:room.id, callsign:CALLSIGN[rint(0,CALLSIGN.length-1)],
     role, level:1, xp:0, productivity:rint(45,92)/100,
-    task:randTask(room,role), busy:rint(3,10), clips:0, contrib:0 };
+    task:randTask(room,role), busy:rint(3,10), clips:0, contrib:0,
+    state: auto?'auto':'await', cuts:auto, learned:auto?0:null };
 }
 
 let state;
@@ -206,6 +240,8 @@ function freshState(){
     qualityMult:1.0,
     rooms: ROOM_DEFS.map(r=>({ ...r, agents:[], contrib:0 })),
     flow:[],
+    pending:[],
+    plans:[],
     hermes:{ callsign:'HERMES', level:1, xp:0, productivity:1.0, working:false, orders:0 },
     core:{ level:1, xp:0, orders:0, buff:1.0, status:'A aguardar ordens' }
   };
@@ -231,6 +267,9 @@ function coreTick(){
     const low=state.rooms.find(r=>r.agents.length<2);
     if(low) cmds.push(`E: reforcar ${low.name} — poucos agentes.`);
     c.status=CORE_TASKS[rint(0,CORE_TASKS.length-1)];
+    const aw=state.rooms.flatMap(r=>r.agents).filter(a=>a.state==='await');
+    aw.forEach(a=>{a.state='work';a.busy=rint(3,10);a.task=randTask(state.rooms.find(r=>r.id===a.roomId),a.role);});
+    if(aw.length) log('E (HERMES) aprovou '+aw.length+' agente(s) a espera.','e');
     log(cmds[rint(0,cmds.length-1)],'e');
   }
 }
@@ -241,29 +280,43 @@ function tick(){
   if(!state.running)return;
   state.simSeconds+=state.speed;
   coreTick();
+  const r2=state.rooms.find(r=>r.id==='r2');
+  if(r2.agents.length && ((r2._planT=(r2._planT||0)+state.speed))>=100){r2._planT=0; mkPlan(r2);}
   let cm=0;
   state.rooms.forEach(room=>{
     room.agents.forEach(a=>{
       if(a.busy>0){a.busy-=state.speed;
         if(a.busy<=0){
-          a.clips++;a.xp+=10;
-          let gain=0;
+          a.clips++;
+          let gain=0, result=0;
           if(room.id==='r1'){ // criadores -> views (boost por qualidade+core)
             const views=rint(200,5000)*(1+a.level*0.3)*a.productivity*state.qualityMult*state.core.buff;
-            gain=views*0.05; state.views+=views;
+            result=views; gain=views*0.05; state.views+=views;
           } else if(room.id==='r2'){ // negocios -> $
-            gain=rint(50,800)*(1+a.level*0.2)*a.productivity*state.core.buff;
-          } else if(room.id==='r3'){ // edicao -> eleva qualidade global
-            state.qualityMult=Math.min(4.0,state.qualityMult+0.01*a.productivity*state.core.buff);
-            gain=rint(10,120)*a.productivity; // pequena $
+            gain=rint(50,800)*(1+a.level*0.2)*a.productivity*state.core.buff; result=gain;
+          } else if(room.id==='r3'){ // edicao -> eleva qualidade global (afeta XP de todos via qualityMult)
+            state.qualityMult=Math.min(4.0,state.qualityMult+0.012*a.productivity*state.core.buff);
+            gain=rint(10,120)*a.productivity; result=gain;
           }
-          a.contrib+=gain; room.contrib+=gain; cm+=gain; state.capital+=gain;
-          if(a.xp>=100){a.xp=0;a.level++;a.productivity=Math.min(0.99,a.productivity+0.03);
-            log(`${a.callsign} (${room.num}) subiu para Lv.${a.level}!`,'e');}
+          // XP proporcional ao RESULTADO produzido: quem produz mais, sobe mais
+          const xpGain=Math.min(60, 6 + Math.floor(result/40) + a.level*2);
+          a.xp+=xpGain; a.contrib+=gain; room.contrib+=gain; cm+=gain; state.capital+=gain;
+          if(a.xp>=100){a.xp=0;a.level++;
+            a.productivity=Math.min(0.99,a.productivity+0.04); // nivel melhora produtividade
+            log(`${a.callsign} (${room.num}) subiu para Lv.${a.level} (+prod)!`,'e');}
           // HERMES (sala E) atribui a tarefa e garante trabalho continuo
           state.hermes.working=true; state.hermes.orders++;
-          a.task=randTask(room,a.role);a.busy=rint(3,10);
-          spawnFlow(room,a);
+          if(a.cuts && a.learned>=2){
+            a.task=randTask(room,a.role);a.busy=rint(3,10);spawnFlow(room,a);
+          } else if(a.cuts){
+            a.learned++; a.task=randTask(room,a.role);a.busy=rint(3,10);spawnFlow(room,a);
+            if(a.learned===2)log(a.callsign+' ('+room.num+') aprendeu os cortes — avanca sozinho.','e');
+          } else {
+            a.state='await'; a.busy=0;
+            state.pending.push({id:a.id, room:room.num, name:a.callsign, role:a.role, result:Math.floor(result), kind:room.id==='r1'?'clip':'plano'});
+            log(a.callsign+' ('+room.num+') terminou — aguarda tua validacao.','e');
+            fetch('/api/notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:a.id,room:room.num,name:a.callsign,role:a.role,result:Math.floor(result),kind:room.id==='r1'?'clip':'plano'})}).catch(()=>{});
+          }
         }
       } else { // Hermes reativa quem parar: ninguem fica ocioso
         state.hermes.working=true;
@@ -320,11 +373,11 @@ function renderRooms(){
       <div class="room-contrib">CONTRIB: <b>${money(room.contrib)}</b> · QTD ${room.agents.length}</div>`;
     if(!sorted.length){html+='<div style="font-size:10px;color:var(--ink-faint)">Sala vazia — recruta agentes.</div>';}
     sorted.forEach(a=>{
-      html+=`<div class="agent${live&&a.busy>0?' on':''}">
+      html+=`<div class="${a.state==='auto'?'agent auto on':(a.busy>0?'agent on':'agent await')}">
         <div class="agent-avatar">${a.callsign[0]}</div>
         <div class="agent-info">
           <div class="agent-name">${a.callsign} <span class="role-tag">${a.role}</span> <span class="lv">Lv.${a.level}</span></div>
-          <div class="agent-task">${live&&a.busy>0?'▸ '+a.task:'· a descansar'}</div>
+          <div class="agent-task">${a.busy>0?'▸ '+a.task:(a.state==='auto'?'· a cortar sozinho':'· aguarda validacao')}</div>
           <div class="bar-mini"><i style="width:${a.productivity*100}%"></i></div>
         </div></div>`;
     });
@@ -406,10 +459,19 @@ function drawStation(){
     ctx.fillStyle='rgba(154,156,140,0.8)';ctx.font='9px "IBM Plex Mono"';
     ctx.fillText(room.func,s.x+10,s.y+38);
     room.agents.forEach((a,j)=>{
-      const px=s.x+24+(j%8)*((s.w-48)/8), py=s.y+70+Math.floor(j/8)*24;
-      ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);
-      ctx.fillStyle=a.busy>0?col:'rgba(90,99,85,0.7)';ctx.fill();
-      ctx.strokeStyle='#0a0c08';ctx.lineWidth=1.5;ctx.stroke();
+      const cols=2; const bx=s.x+14+(j%cols)*((s.w-28)/cols);
+      const by=s.y+64+Math.floor(j/cols)*46;
+      const bw=(s.w-28)/cols-8, bh=40;
+      ctx.fillStyle='rgba(14,17,11,0.9)';ctx.fillRect(bx,by,bw,bh);
+      ctx.strokeStyle=a.busy>0?col:'rgba(90,99,85,0.7)';ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,bh);
+      ctx.fillStyle=col;ctx.font='9px "IBM Plex Mono"';
+      ctx.fillText(a.callsign+' '+a.role,bx+5,by+13);
+      ctx.fillStyle=a.busy>0?'rgba(217,154,62,0.95)':'rgba(154,156,140,0.6)';ctx.font='8px "IBM Plex Mono"';
+      ctx.fillText((a.busy>0?a.task:'idle').slice(0,20),bx+5,by+26);
+      ctx.fillStyle='rgba(143,179,90,0.85)';ctx.beginPath();ctx.arc(bx+bw-6,by+6,3,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(154,156,140,0.7)';ctx.font='7px "IBM Plex Mono"';ctx.fillText('Lv'+a.level,bx+5,by+38);
+      ctx.fillStyle='rgba(30,36,24,0.9)';ctx.fillRect(bx+5,by+33,bw-10,2);
+      ctx.fillStyle=col;ctx.fillRect(bx+5,by+33,(bw-10)*(a.xp/100),2);
     });
     if(!room.agents.length){ctx.fillStyle='rgba(95,99,85,0.7)';ctx.font='10px "IBM Plex Mono"';
       ctx.fillText('vazia',s.x+10,s.y+70);}
@@ -488,11 +550,81 @@ document.getElementById('btn-recruit').addEventListener('click',recruit);
 document.getElementById('btn-reset').addEventListener('click',reset);
 document.getElementById('speed').addEventListener('change',e=>{state.speed=parseInt(e.target.value);renderMaster();});
 
-// init — ecossistema pre-populado (salas visiveis logo a entrada)
+function approve(id){
+  const a=state.rooms.flatMap(r=>r.agents).find(x=>x.id===id); if(!a)return;
+  a.state='work'; a.busy=rint(3,10); a.task=randTask(state.rooms.find(r=>r.id===a.roomId),a.role);
+  state.pending=state.pending.filter(p=>p.id!==id);
+  log(a.callsign+' aprovado por ti — volta ao trabalho.','e');
+  renderRooms();renderPending();renderHUD();
+}
+function reject(id){
+  const a=state.rooms.flatMap(r=>r.agents).find(x=>x.id===id); if(!a)return;
+  a.state='await'; a.busy=0;
+  state.pending=state.pending.filter(p=>p.id!==id);
+  log(a.callsign+' rejeitado — refaz a tarefa.','e');
+  renderRooms();renderPending();renderHUD();
+}
+function renderPending(){
+  const box=document.getElementById('pending');
+  if(!state.pending.length){box.innerHTML='<div style="font-size:10px;color:var(--ink-faint)">Sem notificacoes. Os agentes trabalham e param para validacao.</div>';document.getElementById('pending-box').classList.add('ok');return;}
+  document.getElementById('pending-box').classList.remove('ok');
+  box.innerHTML=state.pending.map(p=>'<div class="notif">OK <b>'+p.name+'</b> ('+p.room+'/'+p.role+') terminou '+p.kind+' — '+p.result+(p.kind==='clip'?' views':' $')+'<br><button class="btn-app" data-id="'+p.id+'">Validar</button><button class="btn-rej" data-id="'+p.id+'">Rejeitar</button></div>').join('');
+  box.querySelectorAll('.btn-app').forEach(b=>b.addEventListener('click',()=>approve(b.dataset.id)));
+  box.querySelectorAll('.btn-rej').forEach(b=>b.addEventListener('click',()=>reject(b.dataset.id)));
+}
+function mkPlan(room){
+  const a=room.agents.find(x=>x.role==='STRATEGIST')||room.agents[0];
+  const ideas=['Funil sponsor Warzone PT','Pacote affiliato Gaming Angola','Campanha TikTok Shop','Parceria marca perifericos','Evento ao vivo 2B'];
+  const idea=ideas[rint(0,ideas.length-1)];
+  const doc={id:uid(),room:room.num,idea,status:'pendente',text:'PLANO: '+idea+'\nObjetivo: aproximar dos 2B\nResponsavel: '+(a?a.callsign:'-')+' ('+room.num+')\nCanal: YouTube+TikTok @TEMSPEST999\nKPI: views, RPM, conversoes\nAprovar para avancar.'};
+  state.plans.unshift(doc);
+  state.pending.push({id:'plan-'+doc.id,room:room.num,name:'PLANO',role:'NEGOCIO',result:0,kind:'plano',plan:true});
+  log('Plano de negocio gerado ('+idea+') — aguarda aprovacao.','e');
+  renderPlans();renderPending();
+}
+function renderPlans(){
+  const box=document.getElementById('plans');
+  if(!state.plans.length){box.innerHTML='<div style="font-size:10px;color:var(--ink-faint)">A sala de Negocios gera documentos para aprovacao.</div>';return;}
+  box.innerHTML=state.plans.map(d=>{
+    const ap=state.pending.find(p=>p.plan&&p.id==='plan-'+d.id);
+    return '<div class="plan-doc"><h4>'+d.idea+'</h4><pre>'+d.text+'</pre>'+(ap?'<button class="btn-app" data-plan="'+d.id+'">Aprovar plano</button> <button class="btn-rej" data-plan="'+d.id+'">Arquivar</button>':'<span style="font-size:9px;color:var(--green)">APROVADO — agentes avancam</span>')+'</div>';
+  }).join('');
+  box.querySelectorAll('.btn-app[data-plan]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.plan; const d=state.plans.find(x=>x.id===id); if(d)d.status='aprovado';
+    state.pending=state.pending.filter(p=>!(p.plan&&p.id==='plan-'+id));
+    log('Plano aprovado — sala de Negocios avanca.','e'); renderPlans();renderPending();
+  }));
+  box.querySelectorAll('.btn-rej[data-plan]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.plan; state.plans=state.plans.filter(x=>x.id!==id);
+    state.pending=state.pending.filter(p=>!(p.plan&&p.id==='plan-'+id));
+    log('Plano arquivado.','e'); renderPlans();renderPending();
+  }));
+}
+document.getElementById('btn-approve-all').addEventListener('click',()=>{
+  state.pending.slice().forEach(p=>{ if(!p.plan) approve(p.id); });
+  state.plans.forEach(d=>{ if(d.status==='pendente') d.status='aprovado'; });
+  state.pending=[];
+  renderPending();renderPlans();renderRooms();renderHUD();
+  log('Aprovaste tudo o que estava pendente.','e');
+});
+
+
+// clip player (Sala 1)
+const clipIn=document.getElementById('clip-in');
+clipIn.addEventListener('change',e=>{const f=e.target.files[0];if(f)document.getElementById('clip-r1').src=URL.createObjectURL(f);});
+
+// init — ecossistema pre-populado (salas visiveis logo a entrada) e a TRABALHAR
 state.rooms.forEach(r=>recruitRoom(r,2));
 renderHUD();renderRooms();renderCore();renderMaster();
-log('TEMSPEST STATION pronto. Clica em ATIVAR p/ o ecossistema trabalhar.','');
+log('TEMSPEST STATION online. Agentes a trabalhar rumo aos $2B.','');
 drawStation();
+renderPending();renderPlans();
+state.rooms.find(r=>r.id==='r2')._planT=0;
+// arranca automaticamente
+
+// ponte WhatsApp: poll decisions do servidor (se online)
+setInterval(()=>{ fetch('/api/decisions').then(r=>r.json()).then(arr=>{ (arr||[]).forEach(d=>{ if(d.action==='approve') approve(d.id); else if(d.action==='reject') reject(d.id); }); }).catch(()=>{}); }, 2500);: os agentes comecam a trabalhar ao abrir (sem clicar Ativar)
+start();
 </script>
 </body>
 </html>

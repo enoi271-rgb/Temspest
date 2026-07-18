@@ -8,3 +8,15 @@ clips/*.mkv
 .DS_Store
 __pycache__/
 *.pyc
+
+# Dev/test deps (jsdom, canvas) — nao sao do simulador
+node_modules/
+package-lock.json
+package.json
+
+# Backend bridge (venv + queue runtime)
+.venv/
+queue.json
+
+# Secrets (numero WhatsApp) — nunca comitar
+.env
