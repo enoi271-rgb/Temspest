@@ -457,7 +457,7 @@ function drawStation(){
   });
   if(!state.agents.length){
     ctx.fillStyle=getCss('--ink-faint');ctx.font='12px "IBM Plex Mono"';
-    ctx.fillText('Sala vazia — recruta criadores para começar.',ROOM.x+60,ROOM.y+ROOM.h/2);
+    ctx.fillText('Recruta criadores para expandir a equipa.',ROOM.x+60,ROOM.y+ROOM.h/2);
   }
 
   // ===== SALA 2 — SALA DE REUNIÃO FUTURISTA (planos discutem/melhoram ideias) =====
@@ -467,24 +467,31 @@ function drawStation(){
 }
 // desenho da Sala 2 (reunião): mesa redonda + avatares de plano a "falar"
 function drawBizRoom(r){
-  if(!state.unlocked.biz){return;}
   ctx.save();
-  // chão
-  const g=ctx.createLinearGradient(r.x,r.y,r.x,r.y+r.h);
-  g.addColorStop(0,'rgba(143,179,90,0.08)');g.addColorStop(1,'rgba(77,95,55,0.02)');
-  ctx.fillStyle=g;ctx.fillRect(r.x,r.y,r.w,r.h);
-  ctx.strokeStyle=getCss('--green');ctx.lineWidth=2;ctx.strokeRect(r.x,r.y,r.w,r.h);
+  // chão ( sempre visível como preview, mais subtil se bloqueada)
+  const locked=!state.unlocked.biz;
+  const ga=ctx.createLinearGradient(r.x,r.y,r.x,r.y+r.h);
+  ga.addColorStop(0,'rgba(143,179,90,0.08)');ga.addColorStop(1,'rgba(77,95,55,0.02)');
+  ctx.fillStyle=ga;ctx.fillRect(r.x,r.y,r.w,r.h);
+  ctx.strokeStyle=locked?'rgba(90,99,85,0.5)':getCss('--green');ctx.lineWidth=2;
+  if(locked)ctx.setLineDash([6,6]);
+  ctx.strokeRect(r.x,r.y,r.w,r.h);ctx.setLineDash([]);
   // título
-  ctx.fillStyle=getCss('--green');ctx.font='600 16px Teko, sans-serif';
-  ctx.fillText('SALA DE REUNIÃO',r.x+10,r.y+24);
+  ctx.fillStyle=locked?'rgba(154,156,140,0.7)':getCss('--green');ctx.font='600 16px Teko, sans-serif';
+  ctx.fillText(locked?'🔒 SALA DE REUNIÃO':'SALA DE REUNIÃO',r.x+10,r.y+24);
   ctx.fillStyle=getCss('--ink-faint');ctx.font='9px "IBM Plex Mono"';
-  ctx.fillText('PLANOS DISCUTEM & MELHORAM IDEIAS',r.x+10,r.y+38);
+  ctx.fillText(locked?'BLOQUEADA · PREVIEW $100K':'PLANOS DISCUTEM & MELHORAM IDEIAS',r.x+10,r.y+38);
   const cx=r.x+r.w/2, cy=r.y+r.h/2+8;
   // mesa redonda holográfica
   ctx.beginPath();ctx.arc(cx,cy,30,0,Math.PI*2);
   ctx.strokeStyle='rgba(143,179,90,0.6)';ctx.lineWidth=2;ctx.stroke();
   const hov=0.2+0.15*Math.sin(Date.now()/400);
-  ctx.fillStyle=`rgba(143,179,90,${hov})`;ctx.fill();
+  ctx.fillStyle=`rgba(143,179,90,${locked?hov*0.4:hov})`;ctx.fill();
+  if(locked){
+    ctx.fillStyle='rgba(154,156,140,0.6)';ctx.font='10px "IBM Plex Mono"';
+    ctx.fillText('Reunião inicia a $100K.',cx-52,cy+46);
+    ctx.restore();return;
+  }
   // avatares de plano à volta da mesa (até 6)
   const n=Math.min(6,state.plans.length);
   const IDEAS=['+Kz','⚡','↗','★','✓','🔥'];
@@ -715,8 +722,12 @@ function renderBiz(){
   });
 }
 
-// init
-renderHUD();log('TEMSPEST STATION v0.2 pronto. Clica em INICIAR.','');
+// init — pré-popula Sala 1 com equipa em espera (visível logo à entrada)
+['VECTOR','FORCE','PULSE'].forEach(cs=>{
+  const a=makeAgent(cs); a.busy=0; state.agents.push(a);
+});
+renderHUD();renderAgents();
+log('TEMSPEST STATION v0.8 online. Clica em INICIAR p/ ativar o ecossistema.','');
 drawStation();
 </script>
 </body>
