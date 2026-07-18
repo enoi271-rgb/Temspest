@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTEMSPESTT // GHOST OPS TERMINAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0a0c08;
+    --bg-1:#12150f;
+    --bg-2:#181c14;
+    --line:#2a3020;
+    --line-strong:#3d4530;
+    --ink:#e7e4d6;
+    --ink-dim:#9a9c8c;
+    --ink-faint:#5f6355;
+    --green:#8fb35a;
+    --green-dim:#4d5f37;
+    --amber:#d99a3e;
+    --red:#c04a34;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg-0);
+    color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;
+    line-height:1.55;
+  }
+  .display{font-family:'Teko',sans-serif;font-weight:600;letter-spacing:0.02em;}
+  ::selection{background:var(--green-dim);color:#fff;}
+
+  .scanlines{
+    position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 3px);
+    opacity:0.35;
+  }
+
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 80px;}
+
+  header.top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:1px solid var(--line-strong);
+    padding-bottom:14px;margin-bottom:26px;
+  }
+  .brand-eyebrow{font-size:11px;letter-spacing:0.25em;color:var(--green);text-transform:uppercase;}
+  .brand-title{font-size:48px;line-height:0.9;color:var(--ink);}
+  .brand-title span{color:var(--green);}
+  .status-box{font-size:11px;color:var(--ink-dim);text-align:right;}
+  .status-dot{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:6px;box-shadow:0 0 6px var(--green);}
+
+  .signature{
+    border:1px solid var(--line);
+    background:var(--bg-1);
+    padding:16px 18px;
+    margin-bottom:26px;
+    font-size:13px;
+    color:var(--ink-dim);
+  }
+  .signature b{color:var(--ink);font-weight:500;}
+
+  .panel{
+    border:1px solid var(--line);
+    background:var(--bg-1);
+    border-radius:2px;
+    padding:22px;
+    margin-bottom:20px;
+  }
+  .panel-head{
+    display:flex;align-items:baseline;gap:10px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:10px;margin-bottom:18px;
+  }
+  .panel-num{color:var(--green);font-size:12px;}
+  .panel-title{font-size:26px;color:var(--ink);letter-spacing:0.01em;}
+
+  label{
+    display:block;font-size:11px;color:var(--ink-dim);
+    text-transform:uppercase;letter-spacing:0.12em;
+    margin-bottom:6px;margin-top:16px;
+  }
+  label:first-of-type{margin-top:0;}
+  textarea, select, input[type=text]{
+    width:100%;
+    background:var(--bg-2);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13.5px;
+    padding:10px 12px;
+    border-radius:2px;
+    outline:none;
+  }
+  textarea:focus, select:focus, input[type=text]:focus{border-color:var(--green-dim);}
+  textarea{resize:vertical;min-height:80px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:640px){.row2{grid-template-columns:1fr;}}
+
+  .btn{
+    margin-top:22px;
+    width:100%;
+    background:var(--green-dim);
+    border:1px solid var(--green);
+    color:#eef4e2;
+    font-family:'Teko',sans-serif;
+    font-weight:600;
+    font-size:20px;
+    letter-spacing:0.08em;
+    padding:12px;
+    border-radius:2px;
+    cursor:pointer;
+    text-transform:uppercase;
+  }
+  .btn:hover{background:#5c703f;}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+  .error-box{
+    border:1px solid var(--red);
+    background:rgba(192,74,52,0.08);
+    color:#e2a190;
+    padding:12px 14px;
+    font-size:12.5px;
+    margin-top:14px;
+    display:none;
+  }
+
+  .loading{
+    display:none;
+    align-items:center;gap:10px;
+    color:var(--green);
+    font-size:13px;
+    margin-top:16px;
+  }
+  .loading .bar{
+    width:16px;height:16px;border:2px solid var(--green-dim);
+    border-top-color:var(--green);border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #output{display:none;}
+
+  .dossier-tag{
+    display:inline-block;
+    font-size:10px;letter-spacing:0.18em;
+    color:var(--ink-faint);
+    border:1px solid var(--line);
+    padding:2px 8px;
+    text-transform:uppercase;
+  }
+
+  .score-row{display:flex;gap:26px;align-items:center;flex-wrap:wrap;}
+  .score-dial{position:relative;width:120px;height:120px;flex:none;}
+  .score-num{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+  }
+  .score-num .n{font-family:'Teko',sans-serif;font-size:40px;color:var(--green);line-height:1;}
+  .score-num .l{font-size:9px;color:var(--ink-dim);letter-spacing:0.15em;}
+  .score-why{flex:1;min-width:200px;font-size:13px;color:var(--ink-dim);}
+
+  .mission-name{font-size:30px;color:var(--amber);margin:0 0 4px;}
+  .mission-brief{font-size:13.5px;color:var(--ink-dim);font-style:italic;}
+
+  ol.titles{margin:0;padding-left:22px;}
+  ol.titles li{margin-bottom:8px;font-size:14px;}
+  ol.titles li::marker{color:var(--green);font-family:'Teko',sans-serif;font-size:15px;}
+
+  .desc-block{font-size:13.5px;white-space:pre-wrap;color:var(--ink);}
+
+  .tag-cloud{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .tag-pill{
+    font-size:11.5px;color:var(--green);
+    border:1px solid var(--green-dim);
+    padding:3px 9px;border-radius:2px;
+  }
+
+  .thumb-card{
+    border:1px solid var(--line);
+    padding:14px;margin-bottom:12px;
+    background:var(--bg-2);
+  }
+  .thumb-card:last-child{margin-bottom:0;}
+  .thumb-num{font-size:11px;color:var(--green);letter-spacing:0.1em;margin-bottom:6px;}
+  .thumb-prompt{font-size:12.5px;color:var(--ink-dim);margin-bottom:8px;}
+  .thumb-meta{font-size:12px;color:var(--ink);}
+  .thumb-meta b{color:var(--amber);font-weight:500;}
+
+  .script-block{
+    font-size:14px;color:var(--ink);
+    border-left:2px solid var(--green-dim);
+    padding-left:14px;
+    white-space:pre-wrap;
+  }
+
+  .engage-list{margin:0;padding-left:0;list-style:none;}
+  .engage-list li{
+    font-size:13.5px;padding:8px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .engage-list li:last-child{border-bottom:none;}
+  .engage-list li::before{content:"› ";color:var(--green);}
+
+  .short-struct{display:flex;flex-direction:column;gap:10px;}
+  .short-seg{border-left:2px solid var(--line-strong);padding-left:12px;}
+  .short-seg .seg-time{font-size:10.5px;color:var(--green);letter-spacing:0.1em;}
+  .short-seg .seg-text{font-size:13px;color:var(--ink);}
+
+  .copy-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;color:var(--ink-dim);
+    background:transparent;border:1px solid var(--line);
+    padding:3px 8px;cursor:pointer;border-radius:2px;
+    float:right;
+  }
+  .copy-btn:hover{color:var(--ink);border-color:var(--line-strong);}
+
+  .note{
+    font-size:11.5px;color:var(--ink-faint);
+    border-top:1px solid var(--line);
+    margin-top:18px;padding-top:12px;
+  }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand-eyebrow">TTEMSPESTT // Ghost Angolano</div>
+      <div class="display brand-title"><span>GHOST</span> OPS TERMINAL</div>
+    </div>
+    <div class="status-box">
+      <div><span class="status-dot"></span>SYSTEM ONLINE</div>
+      <div>Content packaging unit v2.0</div>
+    </div>
+  </header>
+
+  <div class="signature">
+    <b>The Silent Sniper.</b> Envia os dados da tua jogada. O Ghost TTEMSPESTT devolve o pacote completo de publicação: título, descrição, tags, thumbnails, missão, narração e engagement — pronto a publicar.
+    <br><br>
+    <b>Modo de uso:</b> este terminal gera o <i>prompt</i> estruturado. Copia o pacote gerado e envia ao <b>Agent Migs</b> (Hermes) ou cola num modelo Claude/GPT para obteres o pacote final. Sem dependência de API externa.
+  </div>
+
+  <div class="panel" id="input-panel">
+    <div class="panel-head">
+      <span class="panel-num">01</span>
+      <span class="display panel-title">Briefing da missão</span>
+    </div>
+
+    <label for="moment">Descreve o momento (kills, clutch, snipe, erro, reação...)</label>
+    <textarea id="moment" placeholder="Ex: Fui apanhado no meio do círculo por um squad completo, matei os 4 com 5 tiros de sniper a mais de 200m, sem levar dano.">Fui apanhado no meio do círculo por um squad completo, matei os 4 com 5 tiros de sniper a mais de 200m, sem levar dano.</textarea>
+
+    <div class="row2">
+      <div>
+        <label for="weapon">Arma usada</label>
+        <input type="text" id="weapon" placeholder="Ex: SP-R 208" value="SP-R 208">
+      </div>
+      <div>
+        <label for="map">Mapa</label>
+        <input type="text" id="map" placeholder="Ex: Rebirth Island" value="Verdansk">
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label for="result">Resultado da partida</label>
+        <input type="text" id="result" placeholder="Ex: Vitória - Squad wipe" value="Vitória - Squad wipe final">
+      </div>
+      <div>
+        <label for="timestamp">Timestamp do momento (opcional)</label>
+        <input type="text" id="timestamp" placeholder="Ex: 03:42">
+      </div>
+    </div>
+
+    <label for="content-type">Tipo de conteúdo desejado</label>
+    <select id="content-type">
+      <option value="short">Short / Reel / TikTok (9:16)</option>
+      <option value="youtube">Vídeo completo de YouTube</option>
+      <option value="both" selected>Ambos</option>
+    </select>
+
+    <button class="btn" id="generate-btn">Gerar pacote Ghost</button>
+    <div class="error-box" id="error-box"></div>
+    <div class="loading" id="loading"><div class="bar"></div><span id="loading-text">A montar o briefing...</span></div>
+  </div>
+
+  <div id="output"></div>
+
+  <div class="note">
+    TTEMSPESTT™ — Ghost Angolano. Gerado localmente. Para o pacote final com IA, envia o conteúdo em <b>#output</b> ao Agent Migs.
+  </div>
+
+</div>
+
+<script>
+const LOADING_MESSAGES = [
+  "A montar o briefing...",
+  "A calcular potencial viral...",
+  "A escrever a missão...",
+  "A preparar os títulos...",
+  "A selar o dossier..."
+];
+
+function esc(s){
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+
+function scoreColor(score){
+  if(score >= 80) return 'var(--green)';
+  if(score >= 50) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+function dial(score){
+  const r = 50, c = 2*Math.PI*r;
+  const pct = Math.max(0, Math.min(100, score))/100;
+  const dash = c*pct;
+  return `<svg width="120" height="120" viewBox="0 0 120 120">
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="#2a3020" stroke-width="8"/>
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="${scoreColor(score)}" stroke-width="8"
+      stroke-dasharray="${dash} ${c}" stroke-linecap="round"
+      transform="rotate(-90 60 60)"/>
+  </svg>`;
+}
+
+function buildPrompt(p){
+  return `Tu és o Ghost, gestor criativo da marca TTEMSPESTT — "Ghost Angolano", um sniper de Call of Duty Warzone (PC/Console): calmo, estratégico, misterioso, letal, humor seco.
+
+Gera um pacote de publicação completo (JSON) para este momento:
+- Momento: ${p.moment}
+- Arma: ${p.weapon}
+- Mapa: ${p.map}
+- Resultado: ${p.result}
+- Timestamp: ${p.timestamp}
+- Tipo: ${p.contentType}
+
+Mantém a identidade TTEMSPESTT. Frases de assinatura: "Silence is my weapon.", "Ghost out.", "One shot. One mistake." Responde SÓ com JSON válido:
+{
+  "viral_score": <0-100>,
+  "viral_score_reason": "<1-2 frases PT>",
+  "mission": {"code":"MISSION 0XX","name":"<2-4 palavras>","summary":"<1 frase cinematográfica>"},
+  "titles": ["<10 títulos YT>"],
+  "description": "<descrição YT c/ CTA>",
+  "seo_tags": ["<12-18 tags>"],
+  "thumbnails": [{"prompt":"<prompt IA 16:9>","overlay_text":"<texto>","layout":"<posição>"}],
+  "short_structure": {"hook":"","body":"","outro":"","music":"","effects":""},
+  "narration_script": "<3-6 linhas>",
+  "engagement": ["<5 frases CTA>"]
+}`;
+}
+
+function renderOutput(prompt, p){
+  const out = document.getElementById('output');
+  const missionCode = "MISSION " + String(Math.floor(Math.random()*900)+100);
+  out.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><span class="panel-num">02</span><span class="display panel-title">Briefing selado (envia ao Agent Migs)</span></div>
+      <button class="copy-btn" onclick="copyText()">Copiar tudo</button>
+      <div class="desc-block" id="prompt-text" style="white-space:pre-wrap;font-size:12.5px;color:var(--green-dim);">${esc(prompt)}</div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-num">03</span><span class="display panel-title">Resumo do input</span></div>
+      <div class="desc-block">Momento: ${esc(p.moment)}
+Arma: ${esc(p.weapon || '—')}  |  Mapa: ${esc(p.map || '—')}
+Resultado: ${esc(p.result || '—')}  |  Timestamp: ${esc(p.timestamp || '—')}
+Tipo: ${esc(p.contentType)}</div>
+    </div>`;
+  out.style.display = 'block';
+  out.scrollIntoView({behavior:'smooth', block:'start'});
+  window.__lastPrompt = prompt;
+}
+
+function copyText(){
+  if(window.__lastPrompt){
+    navigator.clipboard.writeText(window.__lastPrompt);
+    const b = document.querySelector('.copy-btn');
+    const old = b.textContent;
+    b.textContent = 'Copiado!';
+    setTimeout(()=>b.textContent=old, 1500);
+  }
+}
+
+function generate(){
+  const btn = document.getElementById('generate-btn');
+  const loading = document.getElementById('loading');
+  const loadingText = document.getElementById('loading-text');
+  const errorBox = document.getElementById('error-box');
+  const output = document.getElementById('output');
+
+  errorBox.style.display = 'none';
+  output.style.display = 'none';
+  btn.disabled = true;
+  loading.style.display = 'flex';
+
+  let msgIdx = 0;
+  const msgInterval = setInterval(() => {
+    msgIdx = (msgIdx+1) % LOADING_MESSAGES.length;
+    loadingText.textContent = LOADING_MESSAGES[msgIdx];
+  }, 1400);
+
+  const moment = document.getElementById('moment').value.trim();
+  const weapon = document.getElementById('weapon').value.trim();
+  const map = document.getElementById('map').value.trim();
+  const result = document.getElementById('result').value.trim();
+  const timestamp = document.getElementById('timestamp').value.trim();
+  const contentType = document.getElementById('content-type').value;
+
+  if(!moment){
+    clearInterval(msgInterval);
+    loading.style.display = 'none';
+    btn.disabled = false;
+    errorBox.textContent = 'Descreve o momento antes de gerar o pacote.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  const p = {moment, weapon, map, result, timestamp, contentType};
+  const prompt = buildPrompt(p);
+
+  setTimeout(() => {
+    clearInterval(msgInterval);
+    loading.style.display = 'none';
+    btn.disabled = false;
+    renderOutput(prompt, p);
+  }, 900);
+}
+
+document.getElementById('generate-btn').addEventListener('click', generate);
+</script>
+
+</body>
+</html>

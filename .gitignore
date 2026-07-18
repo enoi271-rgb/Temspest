@@ -1,0 +1,10 @@
+# Ignore large media / test clips (keep repo light)
+clips/*.mp4
+clips/*.mov
+clips/*.webm
+clips/*.mkv
+*.mp4
+*.mov
+.DS_Store
+__pycache__/
+*.pyc

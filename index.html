@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEMSPEST STATION // Ghost Angolano Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0a0c08; --bg-1:#12150f; --bg-2:#181c14;
+    --line:#2a3020; --line-strong:#3d4530;
+    --ink:#e7e4d6; --ink-dim:#9a9c8c; --ink-faint:#5f6355;
+    --green:#8fb35a; --green-dim:#4d5f37; --amber:#d99a3e; --red:#c04a34;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg-0);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;overflow-x:hidden;}
+  .display{font-family:'Teko',sans-serif;font-weight:600;letter-spacing:0.02em;}
+  ::selection{background:var(--green-dim);color:#fff;}
+  .scanlines{position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0.08) 0,rgba(0,0,0,0.08) 1px,transparent 1px,transparent 3px);opacity:0.3;}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px;}
+
+  header.top{display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:1px solid var(--line-strong);padding-bottom:10px;margin-bottom:16px;}
+  .brand-eyebrow{font-size:11px;letter-spacing:0.25em;color:var(--green);text-transform:uppercase;}
+  .brand-title{font-size:44px;line-height:0.9;}
+  .brand-title span{color:var(--green);}
+  .status-box{font-size:11px;color:var(--ink-dim);text-align:right;}
+  .status-dot{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:6px;box-shadow:0 0 6px var(--green);}
+
+  .hud{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+  .hud-cell{border:1px solid var(--line);background:var(--bg-1);padding:10px 12px;}
+  .hud-label{font-size:10px;letter-spacing:0.15em;color:var(--ink-dim);text-transform:uppercase;}
+  .hud-val{font-family:'Teko',sans-serif;font-size:30px;color:var(--green);line-height:1;}
+  .hud-val.amber{color:var(--amber);}
+
+  .goal{margin-bottom:16px;border:1px solid var(--line-strong);background:var(--bg-1);padding:12px 14px;}
+  .goal-top{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-dim);margin-bottom:8px;}
+  .goal-bar{height:16px;background:var(--bg-2);border:1px solid var(--line);position:relative;overflow:hidden;}
+  .goal-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--green-dim),var(--green));transition:width .4s;}
+  .goal-pct{position:absolute;right:6px;top:0;font-size:11px;line-height:16px;color:var(--ink);}
+
+  /* STATION MAP */
+  .station-wrap{border:1px solid var(--line-strong);background:#070906;position:relative;margin-bottom:16px;overflow:hidden;}
+  .station-wrap canvas{display:block;width:100%;height:auto;}
+  .station-label{position:absolute;top:8px;left:12px;font-size:10px;letter-spacing:0.2em;color:var(--green);text-transform:uppercase;z-index:2;}
+  .station-label2{position:absolute;top:8px;right:12px;font-size:10px;color:var(--ink-faint);z-index:2;}
+
+  .layout{display:grid;grid-template-columns:1fr 330px;gap:16px;}
+  @media(max-width:880px){.layout{grid-template-columns:1fr;}.hud{grid-template-columns:repeat(2,1fr);}}
+
+  .panel{border:1px solid var(--line);background:var(--bg-1);border-radius:2px;padding:14px;margin-bottom:16px;}
+  .panel-head{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:12px;}
+  .panel-num{color:var(--green);font-size:12px;}
+  .panel-title{font-size:22px;}
+
+  .agent{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--bg-2);padding:8px 10px;margin-bottom:8px;}
+  .agent-avatar{width:34px;height:34px;flex:none;border:1px solid var(--green-dim);display:flex;align-items:center;justify-content:center;font-family:'Teko',sans-serif;font-size:18px;color:var(--green);background:#0e110b;}
+  .agent-info{flex:1;min-width:0;}
+  .agent-name{font-size:13px;color:var(--ink);}
+  .agent-task{font-size:10.5px;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bar-mini{height:5px;background:#0e110b;border:1px solid var(--line);margin-top:4px;}
+  .bar-mini > i{display:block;height:100%;background:var(--green);}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .btn{background:var(--green-dim);border:1px solid var(--green);color:#eef4e2;
+    font-family:'Teko',sans-serif;font-weight:600;font-size:18px;letter-spacing:0.06em;
+    padding:8px 16px;border-radius:2px;cursor:pointer;text-transform:uppercase;}
+  .btn:hover{background:#5c703f;}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn.ghost{background:transparent;border-color:var(--line-strong);color:var(--ink-dim);}
+  .btn.ghost:hover{color:var(--ink);border-color:var(--green-dim);}
+
+  .speed-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-dim);margin-top:6px;}
+  .speed-row select{background:var(--bg-2);border:1px solid var(--line);color:var(--ink);font-family:'IBM Plex Mono';padding:4px 6px;border-radius:2px;}
+
+  .log{height:230px;overflow-y:auto;border:1px solid var(--line);background:#0e110b;padding:8px 10px;font-size:11.5px;color:var(--ink-dim);}
+  .log .t{color:var(--green-dim);}
+  .log .e{color:var(--amber);}
+
+  .locked{font-size:12px;color:var(--ink-faint);padding:10px 0;}
+  .note{font-size:10.5px;color:var(--ink-faint);border-top:1px solid var(--line);margin-top:12px;padding-top:8px;}
+  .milestone-pop{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--bg-1);border:1px solid var(--amber);
+    color:var(--amber);padding:12px 22px;font-family:'Teko',sans-serif;font-size:22px;letter-spacing:0.05em;z-index:100;opacity:0;transition:opacity .4s;box-shadow:0 0 20px rgba(217,154,62,0.3);}
+  .milestone-pop.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="milestone-pop" id="milestone-pop">MILESTONE</div>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand-eyebrow">TTEMSPESTT // Ghost Angolano</div>
+      <div class="display brand-title"><span>TEMSPEST</span> STATION</div>
+    </div>
+    <div class="status-box"><div><span class="status-dot"></span>STATION ONLINE</div><div id="sim-clock">T+00:00:00</div></div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-cell"><div class="hud-label">Capital</div><div class="hud-val" id="hud-capital">$0</div></div>
+    <div class="hud-cell"><div class="hud-label">Receita/ciclo</div><div class="hud-val amber" id="hud-rate">$0</div></div>
+    <div class="hud-cell"><div class="hud-label">Views</div><div class="hud-val" id="hud-views">0</div></div>
+    <div class="hud-cell"><div class="hud-label">Agentes</div><div class="hud-val" id="hud-agents">0</div></div>
+  </div>
+
+  <div class="goal">
+    <div class="goal-top"><span>OBJETIVO SUPREMO — $2 BILIÕES</span><span>$2,000,000,000.00</span></div>
+    <div class="goal-bar"><div class="goal-fill" id="goal-fill"></div><div class="goal-pct" id="goal-pct">0.000000%</div></div>
+  </div>
+
+  <!-- STATION MAP -->
+  <div class="station-wrap">
+    <div class="station-label">◢ TEMSPEST STATION — VISTA DA ESTAÇÃO</div>
+    <div class="station-label2" id="room-count">SALAS: 1/3</div>
+    <canvas id="station" width="1140" height="460"></canvas>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="btn-start">▶ Iniciar estação</button>
+    <button class="btn ghost" id="btn-pause" disabled>❚❚ Pausar</button>
+    <button class="btn ghost" id="btn-recruit">+ Recrutar criador</button>
+    <button class="btn ghost" id="btn-reset">↺ Reset</button>
+    <div class="speed-row">Velocidade:
+      <select id="speed"><option value="1">1x</option><option value="5">5x</option><option value="20" selected>20x</option><option value="100">100x</option><option value="1000">1000x</option></select>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-num">R1</span><span class="display panel-title">Sala dos Criadores</span></div>
+        <div class="room-sub" style="font-size:10px;color:var(--ink-faint);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">"ESCRAVOS DO GHOST" — onde o conteúdo é forjado</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <button class="btn ghost" id="btn-load-clip" style="font-size:14px;padding:6px 12px;">📺 Carregar clip de teste</button>
+          <input type="file" id="clip-input" accept="video/*" style="display:none;">
+          <span id="clip-name" style="font-size:11px;color:var(--ink-faint);align-self:center;"></span>
+        </div>
+        <video id="clip-player" controls style="width:100%;max-height:240px;background:#000;border:1px solid var(--line);display:none;"></video>
+        <div id="agent-list" style="margin-top:10px;"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-num">R2</span><span class="display panel-title">Sala de Edição</span></div>
+        <div class="locked">🔒 Bloqueada. Conquista $10K para desbloquear.</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-num">R3</span><span class="display panel-title">Sala de Negócios Angola</span></div>
+        <div class="locked">🔒 Bloqueada. Conquista $100K para desbloquear.</div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-num">LOG</span><span class="display panel-title">Comando</span></div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">TEMSPEST STATION v0.2 — protótipo com vista de estação. Valores de jogo/aceleração; ajusta para realismos (views × RPM Angola) no código.</div>
+</div>
+
+<script>
+const GOAL=2_000_000_000;
+const NAMES=["Sombra","T-Troop","Vulto","Fantasma-X","Calado","Névoa","Kamba","Sniper-77","Zero","Cobra","Relâmpago","Quieto"];
+const TASKS=["A gravar snipe","A editar clutch","A subir short","A analyzar trends","A montar thumbnail","A estudar meta","A reagir a clip"];
+
+let state={running:false,speed:20,simSeconds:0,capital:0,views:0,rate:0,agents:[],unlocked:{edit:false,biz:false}};
+function uid(){return Math.random().toString(36).slice(2,8);}
+function rint(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function makeAgent(n){return{id:uid(),name:n||NAMES[rint(0,NAMES.length-1)],level:1,xp:0,productivity:rint(40,90)/100,task:TASKS[rint(0,TASKS.length-1)],busy:rint(3,10),clips:0,px:0,py:0,tx:0,ty:0};}
+
+function log(m,c){const el=document.getElementById('log');const d=document.createElement('div');d.innerHTML=`<span class="t">[${fmtClock(state.simSeconds)}] </span><span class="${c||''}">${m}</span>`;el.appendChild(d);el.scrollTop=el.scrollHeight;while(el.children.length>120)el.removeChild(el.firstChild);}
+function fmtClock(s){return [String(Math.floor(s/3600)).padStart(2,'0'),String(Math.floor(s%3600/60)).padStart(2,'0'),String(s%60).padStart(2,'0')].join(':');}
+function fmtMoney(n){return '$'+Math.floor(n).toLocaleString('en-US');}
+
+// ===== STATION CANVAS =====
+const cv=document.getElementById('station');const ctx=cv.getContext('2d');
+const ROOM={x:60,y:60,w:520,h:340}; // Sala 1 rect in canvas coords
+function setupAgentPositions(){
+  const n=state.agents.length;
+  state.agents.forEach((a,i)=>{
+    const cols=4, gapX=ROOM.w/cols, gapY=ROOM.h/4;
+    const col=i%cols, row=Math.floor(i/cols);
+    a.tx=ROOM.x+gapX*(col+0.5);
+    a.ty=ROOM.y+gapY*(row+0.5);
+    if(a.px===0&&a.py===0){a.px=a.tx;a.py=a.ty;}
+  });
+}
+function drawStation(){
+  const W=cv.width,H=cv.height;
+  // background grid
+  ctx.fillStyle='#070906';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(143,179,90,0.06)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // corridor to the right (future rooms)
+  ctx.strokeStyle='rgba(143,179,90,0.25)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(ROOM.x+ROOM.w,ROOM.y+ROOM.h/2);ctx.lineTo(W-30,ROOM.y+ROOM.h/2);ctx.stroke();
+  // locked room outlines
+  ctx.setLineDash([6,6]);
+  ctx.strokeStyle='rgba(90,99,85,0.5)';
+  const r2={x:640,y:60,w:230,h:150};const r3={x:640,y:250,w:230,h:150};
+  ctx.strokeRect(r2.x,r2.y,r2.w,r2.h);ctx.strokeRect(r3.x,r3.y,r3.w,r3.h);
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(154,156,140,0.7)';ctx.font='11px "IBM Plex Mono"';
+  ctx.fillText('🔒 SALA 2 — EDIÇÃO',r2.x+8,r2.y+22);
+  ctx.fillText('🔒 SALA 3 — NEGÓCIOS ANGOLA',r3.x+8,r3.y+22);
+
+  // ROOM 1
+  const grd=ctx.createLinearGradient(ROOM.x,ROOM.y,ROOM.x,ROOM.y+ROOM.h);
+  grd.addColorStop(0,'rgba(143,179,90,0.10)');grd.addColorStop(1,'rgba(77,95,55,0.03)');
+  ctx.fillStyle=grd;ctx.fillRect(ROOM.x,ROOM.y,ROOM.w,ROOM.h);
+  ctx.strokeStyle=getCss('--green');ctx.lineWidth=2;ctx.strokeRect(ROOM.x,ROOM.y,ROOM.w,ROOM.h);
+  // scan glow
+  ctx.fillStyle='rgba(143,179,90,0.06)';
+  const pulse=0.05+0.04*Math.sin(Date.now()/600);
+  ctx.fillStyle=`rgba(143,179,90,${pulse})`;ctx.fillRect(ROOM.x,ROOM.y,ROOM.w,ROOM.h);
+
+  // title
+  ctx.fillStyle=getCss('--green');ctx.font='600 22px Teko, sans-serif';
+  ctx.fillText('SALA DOS CRIADORES',ROOM.x+14,ROOM.y+30);
+  ctx.fillStyle=getCss('--ink-faint');ctx.font='10px "IBM Plex Mono"';
+  ctx.fillText('ESCRAVOS DO GHOST',ROOM.x+14,ROOM.y+46);
+
+  // workstations grid lines
+  ctx.strokeStyle='rgba(143,179,90,0.12)';
+  for(let c=1;c<4;c++){ctx.beginPath();ctx.moveTo(ROOM.x+ROOM.w/4*c,ROOM.y+10);ctx.lineTo(ROOM.x+ROOM.w/4*c,ROOM.y+ROOM.h-10);ctx.stroke();}
+
+  // agents
+  setupAgentPositions();
+  state.agents.forEach((a,i)=>{
+    a.px+=(a.tx-a.px)*0.08;a.py+=(a.ty-a.py)*0.08;
+    const r=10;
+    // body glow
+    ctx.beginPath();ctx.arc(a.px,a.py,r,0,Math.PI*2);
+    ctx.fillStyle=a.busy>0?'rgba(143,179,90,0.9)':'rgba(90,99,85,0.8)';ctx.fill();
+    ctx.strokeStyle='#0a0c08';ctx.lineWidth=2;ctx.stroke();
+    // initial
+    ctx.fillStyle='#0a0c08';ctx.font='600 12px Teko, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(a.name[0],a.px,a.py);
+    ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    // name + level
+    ctx.fillStyle=getCss('--ink-dim');ctx.font='9px "IBM Plex Mono"';
+    ctx.fillText(`${a.name} L${a.level}`,a.px+r+4,a.py-2);
+    if(a.busy>0){ctx.fillStyle=getCss('--amber');ctx.fillText(a.task,a.px+r+4,a.py+9);}
+  });
+  if(!state.agents.length){
+    ctx.fillStyle=getCss('--ink-faint');ctx.font='12px "IBM Plex Mono"';
+    ctx.fillText('Sala vazia — recruta criadores para começar.',ROOM.x+60,ROOM.y+ROOM.h/2);
+  }
+  requestAnimationFrame(drawStation);
+}
+function getCss(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+// ===== HUD =====
+function renderHUD(){
+  document.getElementById('hud-capital').textContent=fmtMoney(state.capital);
+  document.getElementById('hud-rate').textContent=fmtMoney(state.rate)+'/ciclo';
+  document.getElementById('hud-views').textContent=state.views.toLocaleString('en-US');
+  document.getElementById('hud-agents').textContent=state.agents.length;
+  document.getElementById('sim-clock').textContent='T+'+fmtClock(state.simSeconds);
+  const p=Math.min(100,state.capital/GOAL*100);
+  document.getElementById('goal-fill').style.width=p+'%';
+  document.getElementById('goal-pct').textContent=(state.capital/GOAL*100).toFixed(6)+'%';
+  document.getElementById('room-count').textContent='SALAS: '+(1+(state.unlocked.edit?1:0)+(state.unlocked.biz?1:0))+'/3';
+  if(!state.unlocked.edit&&state.capital>=10000){state.unlocked.edit=true;log('🔓 SALA DE EDIÇÃO desbloqueada!','e');}
+  if(!state.unlocked.biz&&state.capital>=100000){state.unlocked.biz=true;log('🔓 SALA DE NEGÓCIOS ANGOLA desbloqueada!','e');}
+}
+function renderAgents(){
+  const box=document.getElementById('agent-list');box.innerHTML='';
+  state.agents.forEach(a=>{
+    const d=document.createElement('div');d.className='agent';
+    d.innerHTML=`<div class="agent-avatar">${a.name[0]}</div><div class="agent-info"><div class="agent-name">${a.name} <span style="color:var(--ink-faint)">Lv.${a.level}</span></div><div class="agent-task">${a.busy>0?a.task:'A descansar'}</div><div class="bar-mini"><i style="width:${a.productivity*100}%"></i></div></div><div class="agent-stat">${a.clips} clips</div>`;
+    box.appendChild(d);
+  });
+}
+const MILESTONES=[1,10,100,1000,10000,100000,1000000,10000000,100000000,500000000,1000000000,2000000000];
+let lastMile=-1;
+function checkMilestones(){
+  const m=MILESTONES.filter(x=>state.capital>=x).pop();
+  if(m&&m!==lastMile){lastMile=m;const p=document.getElementById('milestone-pop');
+    p.textContent=m>=GOAL?'💀 $2B CONQUISTADOS — MISSÃO GHOST COMPLETA':'MILESTONE: '+fmtMoney(m);
+    p.classList.add('show');setTimeout(()=>p.classList.remove('show'),2600);
+    log(`⭐ MILESTONE ${fmtMoney(m)} atingido!`,'e');}
+}
+
+// ===== LOOP =====
+let timer=null;
+function tick(){
+  if(!state.running)return;
+  state.simSeconds+=state.speed;
+  let cv2=0,cm=0;
+  state.agents.forEach(a=>{
+    if(a.busy>0){a.busy-=state.speed;
+      if(a.busy<=0){a.clips++;a.xp+=10;
+        const views=rint(200,5000)*(1+a.level*0.3)*a.productivity;
+        const money=views*0.05;
+        cv2+=views;cm+=money;state.views+=views;state.capital+=money;
+        if(a.xp>=100){a.xp=0;a.level++;a.productivity=Math.min(0.99,a.productivity+0.03);log(`${a.name} subiu para Lv.${a.level}!`,'e');}
+        a.task=TASKS[rint(0,TASKS.length-1)];a.busy=rint(3,10);
+      }
+    } else {a.task=TASKS[rint(0,TASKS.length-1)];a.busy=rint(3,10);}
+  });
+  state.rate=cm;
+  if(state.simSeconds%10===0){renderHUD();renderAgents();}
+  checkMilestones();
+  timer=setTimeout(tick,1000);
+}
+function start(){if(state.running)return;if(!state.agents.length)recruit(3);state.running=true;
+  document.getElementById('btn-start').disabled=true;document.getElementById('btn-pause').disabled=false;
+  log('▶ TEMSPEST STATION online. Os escravos do Ghost começaram a trabalhar.','e');tick();}
+function pause(){state.running=false;document.getElementById('btn-start').disabled=false;document.getElementById('btn-pause').disabled=true;
+  log('❚❚ Estação pausada.','');if(timer)clearTimeout(timer);}
+function recruit(n){n=n||1;for(let i=0;i<n;i++){const a=makeAgent();a.busy=rint(3,10);state.agents.push(a);}
+  log(`+${n} criador(es) recrutado(s).`,'e');renderAgents();renderHUD();}
+function reset(){pause();state={running:false,speed:parseInt(document.getElementById('speed').value),simSeconds:0,capital:0,views:0,rate:0,agents:[],unlocked:{edit:false,biz:false}};lastMile=-1;document.getElementById('log').innerHTML='';document.getElementById('agent-list').innerHTML='';renderHUD();log('↺ Estação reiniciada.','');}
+
+document.getElementById('btn-start').addEventListener('click',start);
+document.getElementById('btn-pause').addEventListener('click',pause);
+document.getElementById('btn-recruit').addEventListener('click',()=>recruit(1));
+document.getElementById('btn-reset').addEventListener('click',reset);
+document.getElementById('speed').addEventListener('change',e=>{state.speed=parseInt(e.target.value);renderHUD();});
+
+// clip player
+document.getElementById('btn-load-clip').addEventListener('click',()=>document.getElementById('clip-input').click());
+document.getElementById('clip-input').addEventListener('change',e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+  const url=URL.createObjectURL(f);
+  const v=document.getElementById('clip-player');
+  v.src=url;v.style.display='block';v.play().catch(()=>{});
+  document.getElementById('clip-name').textContent=f.name+' ('+(f.size/1048576).toFixed(0)+'MB)';
+  log('📺 Clip de teste carregado: '+f.name,'e');
+});
+
+// init
+renderHUD();log('TEMSPEST STATION v0.2 pronto. Clica em INICIAR.','');
+drawStation();
+</script>
+</body>
+</html>
