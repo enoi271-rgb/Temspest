@@ -174,6 +174,22 @@
     <div class="panel-head"><span class="panel-num">DOC</span><span class="display panel-title">Planos de Negocio</span></div>
     <div id="plans"><div style="font-size:10px;color:var(--ink-faint)">A sala de Negocios gera documentos para aprovacao.</div></div>
   </div>
+  <div class="panel">
+    <div class="panel-head"><span class="panel-num">€</span><span class="display panel-title">Resultados Reais</span></div>
+    <div id="real-balance" style="font-size:22px;color:var(--green);margin:6px 0;">$0</div>
+    <div style="font-size:9px;color:var(--ink-faint)">Ganho: <span id="real-ganho">$0</span> · Perda: <span id="real-perca">$0</span></div>
+    <div style="font-size:10px;color:var(--ink-dim);margin-top:8px;">Carregar GANHO / PERCA</div>
+    <select id="r-kind" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+      <option value="ganho">GANHO</option><option value="perca">PERCA</option></select>
+    <input id="r-amt" type="number" step="0.01" placeholder="Valor (USD)" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+    <input id="r-origin" placeholder="Origem (YouTube/TikTok/IG/Sponsor)" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+    <input id="r-agent" placeholder="Agente" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+    <button class="btn-app" id="btn-entry" style="font-size:13px;padding:3px 10px;width:100%;margin-top:4px;">Registar</button>
+    <div style="font-size:10px;color:var(--ink-dim);margin-top:10px;">Informacao para os agentes</div>
+    <textarea id="r-info" placeholder="Cola briefing / dados / tendencias..." style="font-family:'IBM Plex Mono';font-size:10px;width:100%;height:48px;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;"></textarea>
+    <button class="btn ghost" id="btn-info" style="font-size:13px;padding:3px 10px;width:100%;">Enviar aos agentes</button>
+    <div id="real-feed" style="font-size:9px;color:var(--ink-faint);margin-top:6px;"></div>
+  </div>
 
   <div class="layout">
     <div>
@@ -365,6 +381,9 @@ function log(m,c){const el=document.getElementById('log');const d=document.creat
 
 function renderHUD(){
   document.getElementById('hud-capital').textContent=money(state.capital);
+  // sincroniza com capital real do backend
+  fetch('/api/balance').then(r=>r.json()).then(b=>{ state.capital=b.capital; document.getElementById('hud-capital').textContent=money(b.capital);
+    const rb=document.getElementById('real-balance'); if(rb){rb.textContent=money(b.capital); document.getElementById('real-ganho').textContent=money(b.ganho); document.getElementById('real-perca').textContent=money(b.perca);} }).catch(()=>{});
   document.getElementById('hud-rate').textContent=money(state.rate)+'/ciclo';
   document.getElementById('hud-views').textContent=state.views.toLocaleString('en-US');
   document.getElementById('hud-agents').textContent=state.rooms.reduce((s,r)=>s+r.agents.length,0);
@@ -620,6 +639,9 @@ function approve(id){
   if(pub&&pub.kind==='clip'){
     state.published=state.published||[]; state.published.unshift(pub);
     log('PUBLICADO: '+pub.title+' em '+pub.where+' — '+pub.caption.slice(0,40)+'...','e');
+    const val=pub.result||rint(50,500);
+    fetch('/api/entry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'ganho',amount:val,origin:pub.where,agent:pub.name,note:pub.title})}).catch(()=>{});
+    fetch('/api/result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:pub.name,room:'R1',kind:'post',title:pub.title,value:val})}).catch(()=>{});
   } else if(a){
     a.state='work'; a.busy=rint(3,10); a.task=randTask(state.rooms.find(r=>r.id===a.roomId),a.role);
     log(a.callsign+' aprovado por ti — volta ao trabalho.','e');
@@ -706,6 +728,18 @@ state.rooms.find(r=>r.id==='r2')._planT=0;
 // ponte WhatsApp: poll decisions do servidor (se online)
 setInterval(()=>{ fetch('/api/decisions').then(r=>r.json()).then(arr=>{ (arr||[]).forEach(d=>{ if(d.action==='approve') approve(d.id); else if(d.action==='reject') reject(d.id); }); }).catch(()=>{}); }, 2500); // os agentes comecam a trabalhar ao abrir (sem clicar Ativar)
 const _ci=document.getElementById('clip-input'); if(_ci)_ci.addEventListener('change',uploadClip);
+document.getElementById('btn-entry').addEventListener('click',()=>{
+  const kind=document.getElementById('r-kind').value, amount=parseFloat(document.getElementById('r-amt').value||0);
+  const origin=document.getElementById('r-origin').value||'Outro', agent=document.getElementById('r-agent').value||'-';
+  if(amount<=0){log('Valor invalido.','');return;}
+  fetch('/api/entry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,amount,origin,agent,note:''})}).then(()=>log('Registado: '+kind+' '+money(amount),'e')).catch(()=>{});
+});
+document.getElementById('btn-info').addEventListener('click',()=>{
+  const text=document.getElementById('r-info').value.trim(); if(!text){log('Informacao vazia.','');return;}
+  fetch('/api/info',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).then(()=>{log('Informacao enviada aos agentes.','e');document.getElementById('r-info').value='';}).catch(()=>{});
+});
+// agentes processam info pendente -> produzem resultados
+setInterval(()=>{ fetch('/api/info').then(r=>r.json()).then(arr=>{ const pend=arr.filter(x=>x.status==='pendente'); if(pend.length){ const i=pend[0]; log('Agentes a processar info: '+i.text.slice(0,40)+'...','e'); fetch('/api/result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:'CURATOR',room:'R1',kind:'analise',title:'Analise de info #'+i.id,value:0})}).catch(()=>{}); } }).catch(()=>{}); }, 6000);
 start();
 </script>
 </body>

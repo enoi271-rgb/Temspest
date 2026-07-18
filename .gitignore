@@ -20,3 +20,5 @@ queue.json
 
 # Secrets (numero WhatsApp) — nunca comitar
 .env
+# Base de dados financeira local (resultados reais)
+finance.db
