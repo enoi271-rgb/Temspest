@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TEMSPEST STATION // Ghost Angolano Simulator</title>
+<title>TEMSPEST STATION // Ghost Angolano Ecosystem</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
     --bg-0:#0a0c08; --bg-1:#12150f; --bg-2:#181c14;
     --line:#2a3020; --line-strong:#3d4530;
     --ink:#e7e4d6; --ink-dim:#9a9c8c; --ink-faint:#5f6355;
-    --green:#8fb35a; --green-dim:#4d5f37; --amber:#d99a3e; --red:#c04a34;
+    --green:#8fb35a; --green-dim:#4d5f37; --amber:#d99a3e; --red:#c04a34; --blue:#78b4e6;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg-0);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;overflow-x:hidden;}
@@ -20,9 +20,7 @@
   ::selection{background:var(--green-dim);color:#fff;}
   .scanlines{position:fixed;inset:0;pointer-events:none;z-index:50;
     background:repeating-linear-gradient(0deg,rgba(0,0,0,0.08) 0,rgba(0,0,0,0.08) 1px,transparent 1px,transparent 3px);opacity:0.3;}
-
   .wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px;}
-
   header.top{display:flex;justify-content:space-between;align-items:flex-end;
     border-bottom:1px solid var(--line-strong);padding-bottom:10px;margin-bottom:16px;}
   .brand-eyebrow{font-size:11px;letter-spacing:0.25em;color:var(--green);text-transform:uppercase;}
@@ -30,48 +28,21 @@
   .brand-title span{color:var(--green);}
   .status-box{font-size:11px;color:var(--ink-dim);text-align:right;}
   .status-dot{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:6px;box-shadow:0 0 6px var(--green);}
-
-  .hud{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+  .hud{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;}
   .hud-cell{border:1px solid var(--line);background:var(--bg-1);padding:10px 12px;}
   .hud-label{font-size:10px;letter-spacing:0.15em;color:var(--ink-dim);text-transform:uppercase;}
   .hud-val{font-family:'Teko',sans-serif;font-size:30px;color:var(--green);line-height:1;}
   .hud-val.amber{color:var(--amber);}
-
   .goal{margin-bottom:16px;border:1px solid var(--line-strong);background:var(--bg-1);padding:12px 14px;}
   .goal-top{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-dim);margin-bottom:8px;}
   .goal-bar{height:16px;background:var(--bg-2);border:1px solid var(--line);position:relative;overflow:hidden;}
   .goal-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--green-dim),var(--green));transition:width .4s;}
   .goal-pct{position:absolute;right:6px;top:0;font-size:11px;line-height:16px;color:var(--ink);}
-
-  /* STATION MAP */
   .station-wrap{border:1px solid var(--line-strong);background:#070906;position:relative;margin-bottom:16px;overflow:hidden;}
   .station-wrap canvas{display:block;width:100%;height:auto;}
   .station-label{position:absolute;top:8px;left:12px;font-size:10px;letter-spacing:0.2em;color:var(--green);text-transform:uppercase;z-index:2;}
   .station-label2{position:absolute;top:8px;right:12px;font-size:10px;color:var(--ink-faint);z-index:2;}
-
-  .layout{display:grid;grid-template-columns:1fr 330px;gap:16px;}
-  @media(max-width:880px){.layout{grid-template-columns:1fr;}.hud{grid-template-columns:repeat(2,1fr);}}
-
-  .panel{border:1px solid var(--line);background:var(--bg-1);border-radius:2px;padding:14px;margin-bottom:16px;}
-  .panel-head{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:12px;}
-  .panel-num{color:var(--green);font-size:12px;}
-  .panel-title{font-size:22px;}
-
-  .agent{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--bg-2);padding:8px 10px;margin-bottom:8px;}
-  .agent.on{border-color:var(--green-dim);background:#10140c;box-shadow:inset 0 0 12px rgba(143,179,90,0.08);}
-  .agent-avatar{width:34px;height:34px;flex:none;border:1px solid var(--green-dim);display:flex;align-items:center;justify-content:center;font-family:'Teko',sans-serif;font-size:18px;color:var(--green);background:#0e110b;}
-  .agent-info{flex:1;min-width:0;}
-  .agent-name{font-size:13px;color:var(--ink);}
-  .role-tag{font-size:9px;letter-spacing:0.08em;color:#0a0c08;background:var(--green);padding:1px 6px;border-radius:2px;font-weight:600;}
-  .lv{font-size:9px;color:var(--ink-faint);}
-  .agent-task{font-size:10.5px;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .agent.on .agent-task{color:var(--amber);}
-  .bar-mini{height:5px;background:#0e110b;border:1px solid var(--line);margin-top:4px;}
-  .bar-mini > i{display:block;height:100%;background:var(--green);}
-  .agent-stat{font-size:11px;color:var(--green);font-family:'Teko',sans-serif;font-size:16px;}
-  .term-foot{font-size:9.5px;color:var(--green);letter-spacing:0.05em;margin-top:6px;padding-top:6px;border-top:1px solid var(--line);text-transform:uppercase;}
-
-  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
   .btn{background:var(--green-dim);border:1px solid var(--green);color:#eef4e2;
     font-family:'Teko',sans-serif;font-weight:600;font-size:18px;letter-spacing:0.06em;
     padding:8px 16px;border-radius:2px;cursor:pointer;text-transform:uppercase;}
@@ -79,30 +50,41 @@
   .btn:disabled{opacity:0.4;cursor:not-allowed;}
   .btn.ghost{background:transparent;border-color:var(--line-strong);color:var(--ink-dim);}
   .btn.ghost:hover{color:var(--ink);border-color:var(--green-dim);}
-
-  .speed-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-dim);margin-top:6px;}
+  .speed-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-dim);}
   .speed-row select{background:var(--bg-2);border:1px solid var(--line);color:var(--ink);font-family:'IBM Plex Mono';padding:4px 6px;border-radius:2px;}
-
-  .log{height:230px;overflow-y:auto;border:1px solid var(--line);background:#0e110b;padding:8px 10px;font-size:11.5px;color:var(--ink-dim);}
+  .rooms{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media(max-width:900px){.rooms{grid-template-columns:1fr;}.hud{grid-template-columns:repeat(2,1fr);}}
+  .room{border:1px solid var(--line);background:var(--bg-1);border-radius:2px;padding:12px;position:relative;overflow:hidden;}
+  .room::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--rc,#8fb35a);}
+  .room-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;}
+  .room-name{font-family:'Teko',sans-serif;font-size:20px;line-height:1;color:var(--rc,#8fb35a);}
+  .room-num{font-size:10px;color:var(--ink-faint);}
+  .room-func{font-size:10px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+  .room-contrib{font-size:10px;color:var(--ink-faint);margin-bottom:8px;}
+  .room-contrib b{color:var(--green);font-family:'Teko',sans-serif;font-size:15px;}
+  .agent{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg-2);padding:6px 8px;margin-bottom:6px;}
+  .agent.on{border-color:var(--green-dim);background:#10140c;}
+  .agent-avatar{width:28px;height:28px;flex:none;border:1px solid var(--green-dim);display:flex;align-items:center;justify-content:center;font-family:'Teko',sans-serif;font-size:15px;color:var(--green);background:#0e110b;}
+  .agent-info{flex:1;min-width:0;}
+  .agent-name{font-size:12px;color:var(--ink);}
+  .role-tag{font-size:8px;letter-spacing:0.06em;color:#0a0c08;background:var(--rc,#8fb35a);padding:1px 5px;border-radius:2px;font-weight:600;}
+  .lv{font-size:8px;color:var(--ink-faint);}
+  .agent-task{font-size:9.5px;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .agent.on .agent-task{color:var(--amber);}
+  .bar-mini{height:4px;background:#0e110b;border:1px solid var(--line);margin-top:3px;}
+  .bar-mini > i{display:block;height:100%;background:var(--rc,#8fb35a);}
+  .term-foot{font-size:9px;color:var(--rc,#8fb35a);letter-spacing:0.04em;margin-top:4px;padding-top:4px;border-top:1px solid var(--line);text-transform:uppercase;}
+  .layout{display:grid;grid-template-columns:1fr 330px;gap:16px;margin-top:16px;}
+  @media(max-width:880px){.layout{grid-template-columns:1fr;}}
+  .panel{border:1px solid var(--line);background:var(--bg-1);border-radius:2px;padding:14px;margin-bottom:16px;}
+  .panel-head{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:12px;}
+  .panel-num{color:var(--green);font-size:12px;}
+  .panel-title{font-size:22px;}
+  .log{height:260px;overflow-y:auto;border:1px solid var(--line);background:#0e110b;padding:8px 10px;font-size:11px;color:var(--ink-dim);}
   .log .t{color:var(--green-dim);}
   .log .e{color:var(--amber);}
-
-  .locked{font-size:12px;color:var(--ink-faint);padding:10px 0;}
-  .plan-card{border:1px solid var(--line);background:var(--bg-2);padding:10px 12px;margin-bottom:10px;}
-  .plan-top{display:flex;justify-content:space-between;align-items:baseline;}
-  .plan-name{font-family:'Teko',sans-serif;font-size:18px;color:var(--amber);}
-  .plan-sector{font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.1em;}
-  .plan-status{font-size:10px;padding:1px 7px;border:1px solid var(--green-dim);color:var(--green);}
-  .plan-status.auto{color:#0a0c08;background:var(--green);border-color:var(--green);}
-  .plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0;font-size:10.5px;color:var(--ink-dim);}
-  .plan-grid b{color:var(--ink);font-weight:500;}
-  .plan-bar{height:6px;background:#0e110b;border:1px solid var(--line);}
-  .plan-bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--green-dim),var(--green));}
-  .master-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;}
-  .master-cell{border:1px solid var(--line-strong);background:var(--bg-2);padding:8px;text-align:center;}
-  .master-val{font-family:'Teko',sans-serif;font-size:24px;color:var(--green);line-height:1;}
-  .master-lab{font-size:9px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.1em;}
-  .file-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;}
+  .core-box{border:1px solid var(--green-dim);background:#0e110b;padding:10px;font-size:10.5px;color:var(--green);white-space:pre-line;line-height:1.6;}
+  .core-box .ttl{color:var(--amber);font-family:'Teko',sans-serif;font-size:16px;letter-spacing:0.05em;display:block;margin-bottom:4px;}
   .note{font-size:10.5px;color:var(--ink-faint);border-top:1px solid var(--line);margin-top:12px;padding-top:8px;}
   .milestone-pop{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--bg-1);border:1px solid var(--amber);
     color:var(--amber);padding:12px 22px;font-family:'Teko',sans-serif;font-size:22px;letter-spacing:0.05em;z-index:100;opacity:0;transition:opacity .4s;box-shadow:0 0 20px rgba(217,154,62,0.3);}
@@ -119,7 +101,7 @@
       <div class="brand-eyebrow">TTEMSPESTT // Ghost Angolano</div>
       <div class="display brand-title"><span>TEMSPEST</span> STATION</div>
     </div>
-    <div class="status-box"><div><span class="status-dot"></span>STATION ONLINE</div><div id="sim-clock">T+00:00:00</div></div>
+    <div class="status-box"><div><span class="status-dot"></span>ECOSYSTEMA ONLINE</div><div id="sim-clock">T+00:00:00</div></div>
   </header>
 
   <div class="hud">
@@ -127,607 +109,326 @@
     <div class="hud-cell"><div class="hud-label">Receita/ciclo</div><div class="hud-val amber" id="hud-rate">$0</div></div>
     <div class="hud-cell"><div class="hud-label">Views</div><div class="hud-val" id="hud-views">0</div></div>
     <div class="hud-cell"><div class="hud-label">Agentes</div><div class="hud-val" id="hud-agents">0</div></div>
+    <div class="hud-cell"><div class="hud-label">Salas</div><div class="hud-val" id="hud-rooms">3</div></div>
   </div>
 
   <div class="goal">
-    <div class="goal-top"><span>OBJETIVO SUPREMO — $2 BILIÕES</span><span>$2,000,000,000.00</span></div>
+    <div class="goal-top"><span>OBJETIVO SUPREMO — $2 BILIOES</span><span>$2,000,000,000.00</span></div>
     <div class="goal-bar"><div class="goal-fill" id="goal-fill"></div><div class="goal-pct" id="goal-pct">0.000000%</div></div>
   </div>
 
-  <!-- STATION MAP -->
   <div class="station-wrap">
-    <div class="station-label">◢ TEMSPEST STATION — VISTA DA ESTAÇÃO</div>
-    <div class="station-label2" id="room-count">SALAS: 1/3</div>
-    <canvas id="station" width="1140" height="460"></canvas>
+    <div class="station-label">TEMSPEST STATION — MAPA DO ECOSYSTEMA</div>
+    <div class="station-label2" id="room-count">SALAS: 3</div>
+    <canvas id="station" width="1140" height="420"></canvas>
   </div>
 
   <div class="controls">
-    <button class="btn" id="btn-start">▶ Iniciar estação</button>
+    <button class="btn" id="btn-start">▶ Ativar ecossistema</button>
     <button class="btn ghost" id="btn-pause" disabled>❚❚ Pausar</button>
-    <button class="btn ghost" id="btn-recruit">+ Recrutar criador</button>
+    <button class="btn ghost" id="btn-recruit">+ Recrutar por sala</button>
     <button class="btn ghost" id="btn-reset">↺ Reset</button>
     <div class="speed-row">Velocidade:
       <select id="speed"><option value="1">1x</option><option value="5">5x</option><option value="20" selected>20x</option><option value="100">100x</option><option value="1000">1000x</option></select>
     </div>
   </div>
 
+  <div class="rooms" id="rooms"></div>
+
   <div class="layout">
-    <div>
-      <div class="panel">
-        <div class="panel-head"><span class="panel-num">R1</span><span class="display panel-title">Sala dos Criadores</span></div>
-        <div class="room-sub" style="font-size:10px;color:var(--ink-faint);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">"ESCRAVOS DO GHOST" — ECOSISTEMA DE AGENTES ONLINE</div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-          <button class="btn ghost" id="btn-load-clip" style="font-size:14px;padding:6px 12px;">📺 Carregar clip de teste</button>
-          <input type="file" id="clip-input" accept="video/*" style="display:none;">
-          <span id="clip-name" style="font-size:11px;color:var(--ink-faint);align-self:center;"></span>
-        </div>
-        <video id="clip-player" controls style="width:100%;max-height:240px;background:#000;border:1px solid var(--line);display:none;"></video>
-        <div id="agent-list" style="margin-top:10px;"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><span class="panel-num">R2</span><span class="display panel-title">Sala de Negócios Angola</span></div>
-        <div class="room-sub" style="font-size:10px;color:var(--ink-faint);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Recebe ficheiros de negócio · dashboard por plano + gestão mestra</div>
-        <div id="biz-body">
-          <div class="locked">🔒 Bloqueada. Conquista $100K para desbloquear e ativar o Agente de Planos.</div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><span class="panel-num">R3</span><span class="display panel-title">Sala de Edição</span></div>
-        <div class="locked">🔒 Bloqueada. Conquista $10K para desbloquear.</div>
-      </div>
-    </div>
     <div>
       <div class="panel">
         <div class="panel-head"><span class="panel-num">LOG</span><span class="display panel-title">Comando</span></div>
         <div class="log" id="log"></div>
       </div>
     </div>
+    <div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-num">E</span><span class="display panel-title">Core Commander</span></div>
+        <div class="core-box" id="core-box"><span class="ttl">COMANDANTE "E" (CORE)</span>A aguardar ativacao.</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-num">Σ</span><span class="display panel-title">Mestre</span></div>
+        <div id="master" style="font-size:11px;color:var(--ink-dim);line-height:1.8;"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="note">TEMSPEST STATION v0.8 — ECOSISTEMA: agentes com callsign+role, terminal denso ao vivo, fluxo de cadeia (scout→edit→publish→$). Valores de jogo/aceleração.</div>
+  <div class="note">TEMSPEST STATION — ECOSYSTEMA: varias salas, cada uma com funcao e agentes proprios, a trabalhar perpetuamente ate $2B. Valores de jogo/aceleracao.</div>
 </div>
 
 <script>
 const GOAL=2_000_000_000;
-const NAMES=["Sombra","T-Troop","Vulto","Fantasma-X","Calado","Névoa","Kamba","Sniper-77","Zero","Cobra","Relâmpago","Quieto"];
-const TASKS=["A gravar snipe","A editar clutch","A subir short","A analyzar trends","A montar thumbnail","A estudar meta","A reagir a clip"];
+const CALLSIGN=['VECTOR','FORCE','PULSE','QUANTUM','QUASAR','ATLAS','QUILL','SOLACE','ALPHA','NOVA','ECHO','RAVEN','ZENITH','VOLT','ORACLE','SPECTER','NEXUS','AXIOM','HALO','TITAN'];
 
-let state={running:false,speed:20,simSeconds:0,capital:0,views:0,rate:0,agents:[],unlocked:{edit:false,biz:false},plans:[],flow:[],
-  core:{level:1,xp:0,orders:0,buff:1.0,status:'A aguardar ordens'}};
+// ===== DEFINICAO DAS SALAS (funcao + agentes proprios) =====
+const ROOM_DEFS=[
+  { id:'r1', num:'R1', name:'SALA DOS CRIADORES', func:'Forjar conteudo Ghost', color:'143,179,90',
+    roles:['SCOUT','EDITOR','PUBLISHER','CURATOR'],
+    tasks:{
+      SCOUT:['a cacar clips virais','a scannear Warzone meta','a gravar snipe'],
+      EDITOR:['a editar clutch','a cortar montage','a fazer thumbnail'],
+      PUBLISHER:['a subir Reel','a agendar post','a publicar no IG'],
+      CURATOR:['a selecionar clip','a validar qualidade','a arquivar top']
+    } },
+  { id:'r2', num:'R2', name:'NEGOCIOS ANGOLA', func:'Gerar receita de negocio', color:'217,154,62',
+    roles:['STRATEGIST','RESEARCHER','MONETIZER','ANALYST'],
+    tasks:{
+      STRATEGIST:['a planear campanha','a alinhar 2B','a auditar funil'],
+      RESEARCHER:['a explorar nichos','a mapear concorrencia','a validar ideia'],
+      MONETIZER:['a negociar sponsor','a otimizar RPM','a fechar affiliato'],
+      ANALYST:['a ler analytics','a medir retencao','a projetar views']
+    } },
+  { id:'r3', num:'R3', name:'SALA DE EDICAO', func:'Elevar qualidade / RPM', color:'120,180,230',
+    roles:['COLORIST','SOUND','THUMBNAIL','RETOUCH'],
+    tasks:{
+      COLORIST:['a correcao de cor','a grading','a estilo LUT'],
+      SOUND:['a mixar audio','a sync','a sound design'],
+      THUMBNAIL:['a desenhar thumb','a testar CTR','a A/B variant'],
+      RETOUCH:['a limpar ruido','a upscale','a refinar']
+    } }
+];
 
-// ===== AGENTES COM CALLSIGN + ROLE (estilo ecossistema ULTRON) =====
-const CALLSIGN=['VECTOR','FORCE','PULSE','QUANTUM','QUASAR','ATLAS','QUILL','SOLACE','ALPHA','NOVA','ECHO','RAVEN','ZENITH','VOLT','ORACLE','SPECTER'];
-const ROLES=['SCOUT','EDITOR','PUBLISHER','ANALYST','STRATEGIST','RESEARCHER','MONETIZER','CURATOR'];
-const TASKS_BY_ROLE={
-  SCOUT:['A caçar clips virais','A scannear Warzone meta','A gravar snipe','A procurar trend'],
-  EDITOR:['A editar clutch','A cortar montage','A sync audio','A fazer thumbnail'],
-  PUBLISHER:['A subir Reel','A agendar post','A otimizar hashtags','A publicar no IG'],
-  ANALYST:['A ler analytics','A medir retenção','A cruzar dados','A projetar views'],
-  STRATEGIST:['A planear campanha','A alinhar 2B','A decidir vertical','A auditar funil'],
-  RESEARCHER:['A explorar nichos','A mapear concorrência','A validar ideia','A ler mercado'],
-  MONETIZER:['A negociar sponsor','A otimizar RPM','A fechar affiliato','A cobrar brand'],
-  CURATOR:['A selecionar clip','A validar qualidade','A arquivar top','A rejeitar lixo']
-};
-function randTask(role){const t=TASKS_BY_ROLE[role];return t[rint(0,t.length-1)];}
-function makeAgent(n,role){
-  role=role||ROLES[rint(0,ROLES.length-1)];
-  const cs=n||CALLSIGN[rint(0,CALLSIGN.length-1)];
-  return{id:uid(),callsign:cs,role,level:1,xp:0,productivity:rint(45,92)/100,
-    task:randTask(role),busy:rint(3,10),clips:0,px:0,py:0,tx:0,ty:0,
-    thought:randTask(role)};
+function randTask(room,role){const t=room.tasks[role];return t[Math.floor(Math.random()*t.length)];}
+function uid(){return Math.random().toString(36).slice(2,8);}
+function rint(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+
+function makeAgent(room,role){
+  return{ id:uid(), roomId:room.id, callsign:CALLSIGN[rint(0,CALLSIGN.length-1)],
+    role, level:1, xp:0, productivity:rint(45,92)/100,
+    task:randTask(room,role), busy:rint(3,10), clips:0, contrib:0 };
 }
 
-// ===== PLANOS DE NEGÓCIO (Sala 2) =====
-const SECTORS=['Comércio','Tecnologia','Agricultura','Logística','Eventos','Educação','Imobiliário','Alimentação'];
-function makePlan(d){
-  d=d||{};
-  const invested=d.invested||rint(5,80)*1000;            // USD
-  const monthlyCost=d.monthlyCost||rint(5,40)*100;       // USD/mês
-  const monthlyRev=d.monthlyRev||monthlyCost+rint(2,60)*100;
-  const net=monthlyRev-monthlyCost;
-  const breakeven=net>0?Math.ceil(invested/net):999;
+let state;
+function freshState(){
   return {
-    id:uid(),
-    name:d.name||SECTORS[rint(0,SECTORS.length-1)]+' #'+rint(10,99),
-    sector:d.sector||SECTORS[rint(0,SECTORS.length-1)],
-    invested, monthlyCost, monthlyRev,
-    breakeven, risk:d.risk||rint(20,85),
-    accRev:0, progress:0, status:'ANALISANDO'
+    running:false, speed:20, simSeconds:0, capital:0, views:0, rate:0,
+    qualityMult:1.0,
+    rooms: ROOM_DEFS.map(r=>({ ...r, agents:[], contrib:0 })),
+    flow:[],
+    core:{ level:1, xp:0, orders:0, buff:1.0, status:'A aguardar ordens' }
   };
 }
-function planTick(){
-  if(!state.unlocked.biz) return;
-  state.plans.forEach(p=>{
-    const gain=p.monthlyRev*state.core.buff*0.02*state.speed;
-    p.accRev+=gain;
-    p.progress=Math.min(1,p.accRev/p.invested);
-    if(p.progress>=1 && p.status!=='AUTO-SUSTENTÁVEL'){
-      p.status='AUTO-SUSTENTÁVEL';
-      log(`📈 Plano "${p.name}" atingiu auto-sustentabilidade!`,'e');
-    } else if(p.status==='ANALISANDO' && p.progress>0.05){p.status='EM CURSO';}
-    // evento de risco
-    if(Math.random()<0.01*state.speed/20 && p.risk>50){
-      const loss=p.invested*0.02; p.accRev=Math.max(0,p.accRev-loss);
-      log(`⚠️ Risco em "${p.name}": perda de ${fmtMoney(loss)}.`,'d');
-    }
-  });
-}
-function planMaster(){
-  if(!state.plans.length) return {n:0,inv:0,rev:0,risk:0,auto:0};
-  const inv=state.plans.reduce((s,p)=>s+p.invested,0);
-  const rev=state.plans.reduce((s,p)=>s+p.accRev,0);
-  const risk=state.plans.reduce((s,p)=>s+p.risk,0)/state.plans.length;
-  const auto=state.plans.filter(p=>p.status==='AUTO-SUSTENTÁVEL').length;
-  return {n:state.plans.length,inv,rev,risk,auto};
-}
+state=freshState();
 
-// Comandante "E" — orquestrador da estação (estilo ULTRON)
-const CORE_TASKS=['A coordenar prioridades','A aprovar decisões','A alinhar agentes','A otimizar rotas','A auditar salas','A planeiar expansão','A gerir Sala 2 (Negócios)'];
+// ===== COMANDANTE "E" (CORE) — orquestra todas as salas =====
+const CORE_TASKS=['A coordenar prioridades','A aprovar decisoes','A alinhar salas','A otimizar rotas','A auditar ecossistema','A planear expansao'];
 function coreTick(){
   const c=state.core;
-  // ganha XP por ciclo de sim; acelera com nº de agentes + planos
-  c.xp += state.agents.length*0.5 + state.plans.length*0.3 + 0.2;
-  if(c.xp>=100){c.xp=0;c.level++;
-    c.buff=Math.min(2.0,1+c.level*0.05);
-    log(`⚡ E (CORE) subiu para Lv.${c.level} — buff de estação x${c.buff.toFixed(2)}`,'e');
-  }
-  // emite ordem periodicamente
+  const totalAgents=state.rooms.reduce((s,r)=>s+r.agents.length,0);
+  c.xp += totalAgents*0.4 + 0.2;
+  if(c.xp>=100){c.xp=0;c.level++;c.buff=Math.min(2.0,1+c.level*0.05);
+    log(`E (CORE) subiu para Lv.${c.level} — buff x${c.buff.toFixed(2)}`,'e');}
   if(state.simSeconds%25===0){
     c.orders++;
     const cmds=[
-      'E: priorizar snipes virais na Sala 1.',
-      'E: manter silêncio. Deixar os escravos trabalhar.',
-      'E: auditar produtividade dos criadores.',
-      `E: ${state.agents.length} operativos alinhados ao objetivo $2B.`
+      'E: todas as salas operacionais. Rumo aos $2B.',
+      'E: manter silencio. Deixar os agentes trabalhar.',
+      `E: ${totalAgents} agentes alinhados ao objetivo.`,
+      `E: qualidade global x${state.qualityMult.toFixed(2)}.`
     ];
-    // ordens específicas de negócio (Sala 2)
-    if(state.unlocked.biz && state.plans.length){
-      const m=planMaster();
-      cmds.push(`E: ${m.n} planos ativos · ${m.auto} auto-sustentáveis · risco médio ${m.risk.toFixed(0)}%.`);
-      const best=state.plans.slice().sort((a,b)=>b.progress-a.progress)[0];
-      const worst=state.plans.slice().sort((a,b)=>b.risk-a.risk)[0];
-      if(best && best.status!=='AUTO-SUSTENTÁVEL') cmds.push(`E: acelerar "${best.name}" — ${(best.progress*100).toFixed(0)}% p/ auto-sustentável.`);
-      if(worst && worst.risk>60) cmds.push(`E: mitigar risco em "${worst.name}" (${worst.risk}%).`);
-    }
+    const low=state.rooms.find(r=>r.agents.length<2);
+    if(low) cmds.push(`E: reforcar ${low.name} — poucos agentes.`);
     c.status=CORE_TASKS[rint(0,CORE_TASKS.length-1)];
     log(cmds[rint(0,cmds.length-1)],'e');
   }
 }
-// a "E" aprova planos e reduz risco (governança da Sala 2)
-function coreGovernBiz(){
-  if(!state.unlocked.biz) return;
-  // a cada 50 ciclos, E audita: reduz risco dos planos e aprova Auto-Sustentáveis
-  if(state.simSeconds%50===0 && state.plans.length){
-    state.plans.forEach(p=>{
-      p.risk=Math.max(5,p.risk-1); // governança baixa o risco lentamente
-      if(p.progress>=1 && p.status!=='AUTO-SUSTENTÁVEL'){
-        p.status='AUTO-SUSTENTÁVEL';
-        log(`✅ E aprovou "${p.name}" como AUTO-SUSTENTÁVEL.`,'e');
-      }
-    });
-  }
-}
-function uid(){return Math.random().toString(36).slice(2,8);}
-function rint(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
-function makeAgent(n){return{id:uid(),name:n||NAMES[rint(0,NAMES.length-1)],level:1,xp:0,productivity:rint(40,90)/100,task:TASKS[rint(0,TASKS.length-1)],busy:rint(3,10),clips:0,px:0,py:0,tx:0,ty:0};}
 
-function log(m,c){const el=document.getElementById('log');const d=document.createElement('div');d.innerHTML=`<span class="t">[${fmtClock(state.simSeconds)}] </span><span class="${c||''}">${m}</span>`;el.appendChild(d);el.scrollTop=el.scrollHeight;while(el.children.length>120)el.removeChild(el.firstChild);}
-function fmtClock(s){return [String(Math.floor(s/3600)).padStart(2,'0'),String(Math.floor(s%3600/60)).padStart(2,'0'),String(s%60).padStart(2,'0')].join(':');}
-function fmtMoney(n){return '$'+Math.floor(n).toLocaleString('en-US');}
-
-// ===== STATION CANVAS =====
-const cv=document.getElementById('station');const ctx=cv.getContext('2d');
-const ROOM={x:60,y:60,w:520,h:340}; // Sala 1 rect in canvas coords
-function setupAgentPositions(){
-  const n=state.agents.length;
-  state.agents.forEach((a,i)=>{
-    const cols=4, gapX=ROOM.w/cols, gapY=ROOM.h/4;
-    const col=i%cols, row=Math.floor(i/cols);
-    a.tx=ROOM.x+gapX*(col+0.5);
-    a.ty=ROOM.y+gapY*(row+0.5);
-    if(a.px===0&&a.py===0){a.px=a.tx;a.py=a.ty;}
-  });
-}
-function drawStation(){
-  const W=cv.width,H=cv.height;
-  // background grid
-  ctx.fillStyle='#070906';ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='rgba(143,179,90,0.06)';ctx.lineWidth=1;
-  for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-  for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-
-  // ===== CENTRAL MOTHERBOARD (nó "E") =====
-  const CX=ROOM.x+ROOM.w+70, CY=ROOM.y+ROOM.h/2, CR=46;
-  // circuit traces saindo da central
-  ctx.strokeStyle=getCss('--green');ctx.lineWidth=2;
-  const tracePulse=0.4+0.4*Math.abs(Math.sin(Date.now()/500));
-  ctx.globalAlpha=tracePulse;
-  // trace -> Sala 1 (esquerda)
-  ctx.beginPath();ctx.moveTo(CX-CR, CY);ctx.lineTo(ROOM.x+ROOM.w, CY);ctx.stroke();
-  // trace -> Sala 2 (cima-direita)
-  ctx.beginPath();ctx.moveTo(CX+CR*0.7, CY-CR*0.7);ctx.lineTo(r2.x, r2.y+r2.h);ctx.stroke();
-  // trace -> Sala 3 (baixo-direita)
-  ctx.beginPath();ctx.moveTo(CX+CR*0.7, CY+CR*0.7);ctx.lineTo(r3.x, r3.y);ctx.stroke();
-  ctx.globalAlpha=1;
-  // placa (hexágono estilo motherboard)
-  ctx.save();
-  ctx.translate(CX,CY);
-  ctx.beginPath();
-  for(let i=0;i<6;i++){const ang=Math.PI/3*i-Math.PI/6;const px=Math.cos(ang)*CR,py=Math.sin(ang)*CR;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
-  ctx.closePath();
-  const cg=ctx.createRadialGradient(0,0,4,0,0,CR);
-  cg.addColorStop(0,'rgba(143,179,90,0.35)');cg.addColorStop(1,'rgba(77,95,55,0.06)');
-  ctx.fillStyle=cg;ctx.fill();
-  ctx.strokeStyle=getCss('--green');ctx.lineWidth=2.5;ctx.stroke();
-  // pinos do circuito
-  ctx.fillStyle=getCss('--green');
-  for(let i=0;i<6;i++){const ang=Math.PI/3*i-Math.PI/6;const px=Math.cos(ang)*(CR+5),py=Math.sin(ang)*(CR+5);ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);ctx.fill();}
-  // letra E
-  const eg=state.running?(0.55+0.45*Math.abs(Math.sin(Date.now()/300))):0.4;
-  ctx.fillStyle=`rgba(143,179,90,${eg})`;
-  ctx.font='600 54px Teko, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('E',0,2);
-  ctx.textAlign='left';ctx.textBaseline='alphabetic';
-  ctx.restore();
-  ctx.fillStyle=getCss('--green');ctx.font='10px "IBM Plex Mono"';
-  ctx.textAlign='center';
-  ctx.fillText('CENTRAL // MOTHERBOARD',CX,CY+CR+16);
-  ctx.textAlign='left';
-
-  // corridor to the right (future rooms) — keep faint behind traces
-  ctx.strokeStyle='rgba(143,179,90,0.12)';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(CX+CR,CY);ctx.lineTo(W-30,CY);ctx.stroke();
-  // locked room outlines
-  ctx.setLineDash([6,6]);
-  ctx.strokeStyle='rgba(90,99,85,0.5)';
-  const r2={x:640,y:60,w:230,h:150};const r3={x:640,y:250,w:230,h:150};
-  ctx.strokeRect(r2.x,r2.y,r2.w,r2.h);ctx.strokeRect(r3.x,r3.y,r3.w,r3.h);
-  ctx.setLineDash([]);
-  ctx.fillStyle='rgba(154,156,140,0.7)';ctx.font='11px "IBM Plex Mono"';
-  ctx.fillText('🔒 SALA 2 — NEGÓCIOS ANGOLA',r2.x+8,r2.y+22);
-  ctx.fillText('🔒 SALA 3 — EDIÇÃO',r3.x+8,r3.y+22);
-
-  // ROOM 1
-  const grd=ctx.createLinearGradient(ROOM.x,ROOM.y,ROOM.x,ROOM.y+ROOM.h);
-  grd.addColorStop(0,'rgba(143,179,90,0.10)');grd.addColorStop(1,'rgba(77,95,55,0.03)');
-  ctx.fillStyle=grd;ctx.fillRect(ROOM.x,ROOM.y,ROOM.w,ROOM.h);
-  ctx.strokeStyle=getCss('--green');ctx.lineWidth=2;ctx.strokeRect(ROOM.x,ROOM.y,ROOM.w,ROOM.h);
-  // scan glow
-  ctx.fillStyle='rgba(143,179,90,0.06)';
-  const pulse=0.05+0.04*Math.sin(Date.now()/600);
-  ctx.fillStyle=`rgba(143,179,90,${pulse})`;ctx.fillRect(ROOM.x,ROOM.y,ROOM.w,ROOM.h);
-
-  // title
-  ctx.fillStyle=getCss('--green');ctx.font='600 22px Teko, sans-serif';
-  ctx.fillText('SALA DOS CRIADORES',ROOM.x+14,ROOM.y+30);
-  ctx.fillStyle=getCss('--ink-faint');ctx.font='10px "IBM Plex Mono"';
-  ctx.fillText('ESCRAVOS DO GHOST',ROOM.x+14,ROOM.y+46);
-
-  // workstations grid lines
-  ctx.strokeStyle='rgba(143,179,90,0.12)';
-  for(let c=1;c<4;c++){ctx.beginPath();ctx.moveTo(ROOM.x+ROOM.w/4*c,ROOM.y+10);ctx.lineTo(ROOM.x+ROOM.w/4*c,ROOM.y+ROOM.h-10);ctx.stroke();}
-
-  // agents + PC + robot de visualização
-  setupAgentPositions();
-  state.agents.forEach((a,i)=>{
-    a.px+=(a.tx-a.px)*0.08;a.py+=(a.ty-a.py)*0.08;
-    // PC / estação futurista (à esquerda do agente)
-    const pcx=a.px-26, pcy=a.py+6;
-    ctx.fillStyle='#0e110b';ctx.strokeStyle='rgba(143,179,90,0.5)';ctx.lineWidth=1.5;
-    ctx.fillRect(pcx-13,pcy-9,26,18);ctx.strokeRect(pcx-13,pcy-9,26,18);
-    // ecrã a piscar (verde) conforme está ocupado
-    const scr=0.4+0.5*Math.abs(Math.sin(Date.now()/ (a.busy>0?180:600) + i));
-    ctx.fillStyle=`rgba(143,179,90,${a.busy>0?scr:0.15})`;
-    ctx.fillRect(pcx-10,pcy-6,20,12);
-    // base do PC
-    ctx.fillStyle='rgba(143,179,90,0.25)';ctx.fillRect(pcx-4,pcy+9,8,4);
-    // ROBÔ de visualização (à direita, a trabalhar)
-    const rx=a.px+20, ry=a.py+2, bs=6+Math.sin(Date.now()/200+i)*1.2;
-    ctx.save();ctx.translate(rx,ry);
-    ctx.fillStyle=a.busy>0?'rgba(217,154,62,0.95)':'rgba(90,99,85,0.7)';
-    ctx.fillRect(-bs,-bs,bs*2,bs*2);
-    ctx.strokeStyle='#0a0c08';ctx.lineWidth=1.5;ctx.strokeRect(-bs,-bs,bs*2,bs*2);
-    // antena
-    ctx.beginPath();ctx.moveTo(0,-bs);ctx.lineTo(0,-bs-5);ctx.stroke();
-    ctx.fillStyle=a.busy>0?'#d99a3e':'#5a6355';ctx.beginPath();ctx.arc(0,-bs-6,1.8,0,Math.PI*2);ctx.fill();
-    // feixe de trabalho (robô -> agente)
-    if(a.busy>0){ctx.strokeStyle=`rgba(217,154,62,${0.3+0.3*Math.sin(Date.now()/150+i)})`;ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(-bs,0);ctx.lineTo(-bs-14,0);ctx.stroke();}
-    ctx.restore();
-    // corpo do agente
-    const r=10;
-    ctx.beginPath();ctx.arc(a.px,a.py,r,0,Math.PI*2);
-    ctx.fillStyle=a.busy>0?'rgba(143,179,90,0.9)':'rgba(90,99,85,0.8)';ctx.fill();
-    ctx.strokeStyle='#0a0c08';ctx.lineWidth=2;ctx.stroke();
-    ctx.fillStyle='#0a0c08';ctx.font='600 12px Teko, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(a.callsign[0],a.px,a.py);
-    ctx.textAlign='left';ctx.textBaseline='alphabetic';
-    ctx.fillStyle=getCss('--ink-dim');ctx.font='9px "IBM Plex Mono"';
-    ctx.fillText(`${a.callsign} ${a.role} L${a.level}`,a.px+r+4,a.py-2);
-    if(a.busy>0){ctx.fillStyle=getCss('--amber');ctx.fillText(a.task,a.px+r+4,a.py+9);}
-  });
-  // FLUXO: pacotes a viajar pela sala (cadeia criador->editor->publicador)
-  state.flow.forEach(p=>{
-    ctx.save();ctx.globalAlpha=Math.max(0.15,1-p.life/400);
-    ctx.fillStyle=p.col;
-    ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fill();
-    // rasto
-    ctx.globalAlpha*=0.4;ctx.fillRect(p.x-8,p.y-1,8,2);
-    ctx.restore();
-  });
-  if(!state.agents.length){
-    ctx.fillStyle=getCss('--ink-faint');ctx.font='12px "IBM Plex Mono"';
-    ctx.fillText('Recruta criadores para expandir a equipa.',ROOM.x+60,ROOM.y+ROOM.h/2);
-  }
-
-  // ===== SALA 2 — SALA DE REUNIÃO FUTURISTA (planos discutem/melhoram ideias) =====
-  drawBizRoom(r2);
-
-  requestAnimationFrame(drawStation);
-}
-// desenho da Sala 2 (reunião): mesa redonda + avatares de plano a "falar"
-function drawBizRoom(r){
-  ctx.save();
-  // chão ( sempre visível como preview, mais subtil se bloqueada)
-  const locked=!state.unlocked.biz;
-  const ga=ctx.createLinearGradient(r.x,r.y,r.x,r.y+r.h);
-  ga.addColorStop(0,'rgba(143,179,90,0.08)');ga.addColorStop(1,'rgba(77,95,55,0.02)');
-  ctx.fillStyle=ga;ctx.fillRect(r.x,r.y,r.w,r.h);
-  ctx.strokeStyle=locked?'rgba(90,99,85,0.5)':getCss('--green');ctx.lineWidth=2;
-  if(locked)ctx.setLineDash([6,6]);
-  ctx.strokeRect(r.x,r.y,r.w,r.h);ctx.setLineDash([]);
-  // título
-  ctx.fillStyle=locked?'rgba(154,156,140,0.7)':getCss('--green');ctx.font='600 16px Teko, sans-serif';
-  ctx.fillText(locked?'🔒 SALA DE REUNIÃO':'SALA DE REUNIÃO',r.x+10,r.y+24);
-  ctx.fillStyle=getCss('--ink-faint');ctx.font='9px "IBM Plex Mono"';
-  ctx.fillText(locked?'BLOQUEADA · PREVIEW $100K':'PLANOS DISCUTEM & MELHORAM IDEIAS',r.x+10,r.y+38);
-  const cx=r.x+r.w/2, cy=r.y+r.h/2+8;
-  // mesa redonda holográfica
-  ctx.beginPath();ctx.arc(cx,cy,30,0,Math.PI*2);
-  ctx.strokeStyle='rgba(143,179,90,0.6)';ctx.lineWidth=2;ctx.stroke();
-  const hov=0.2+0.15*Math.sin(Date.now()/400);
-  ctx.fillStyle=`rgba(143,179,90,${locked?hov*0.4:hov})`;ctx.fill();
-  if(locked){
-    ctx.fillStyle='rgba(154,156,140,0.6)';ctx.font='10px "IBM Plex Mono"';
-    ctx.fillText('Reunião inicia a $100K.',cx-52,cy+46);
-    ctx.restore();return;
-  }
-  // avatares de plano à volta da mesa (até 6)
-  const n=Math.min(6,state.plans.length);
-  const IDEAS=['+Kz','⚡','↗','★','✓','🔥'];
-  state.plans.slice(0,n).forEach((p,i)=>{
-    const ang=Math.PI*2*i/n - Math.PI/2;
-    const px=cx+Math.cos(ang)*48, py=cy+Math.sin(ang)*34;
-    const active=p.status==='AUTO-SUSTENTÁVEL'||p.status==='EM CURSO';
-    // corpo
-    ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);
-    ctx.fillStyle=active?'rgba(143,179,90,0.9)':'rgba(90,99,85,0.7)';ctx.fill();
-    ctx.strokeStyle='#0a0c08';ctx.lineWidth=1.5;ctx.stroke();
-    // letra do setor
-    ctx.fillStyle='#0a0c08';ctx.font='600 9px Teko';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(p.sector[0],px,py);ctx.textAlign='left';ctx.textBaseline='alphabetic';
-    // balão de fala (ideia) a piscar
-    if(active && Math.sin(Date.now()/300+i)>0.3){
-      const bx=px+10, by=py-14;
-      ctx.fillStyle='rgba(143,179,90,0.18)';ctx.strokeStyle='rgba(143,179,90,0.5)';
-      ctx.beginPath();ctx.rect(bx,by-9,18,12);ctx.fill();ctx.stroke();
-      ctx.fillStyle=getCss('--green');ctx.font='9px "IBM Plex Mono"';
-      ctx.fillText(IDEAS[i%IDEAS.length],bx+2,by);
-    }
-  });
-  if(!state.plans.length){
-    ctx.fillStyle=getCss('--ink-faint');ctx.font='10px "IBM Plex Mono"';
-    ctx.fillText('Sala aberta — cria planos p/ reunir.',r.x+10,r.y+r.h-14);
-  }
-  ctx.restore();
-}
-function getCss(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
-
-// ===== HUD =====
-function renderHUD(){
-  document.getElementById('hud-capital').textContent=fmtMoney(state.capital);
-  document.getElementById('hud-rate').textContent=fmtMoney(state.rate)+'/ciclo';
-  document.getElementById('hud-views').textContent=state.views.toLocaleString('en-US');
-  document.getElementById('hud-agents').textContent=state.agents.length;
-  document.getElementById('sim-clock').textContent='T+'+fmtClock(state.simSeconds);
-  const p=Math.min(100,state.capital/GOAL*100);
-  document.getElementById('goal-fill').style.width=p+'%';
-  document.getElementById('goal-pct').textContent=(state.capital/GOAL*100).toFixed(6)+'%';
-  document.getElementById('room-count').textContent='SALAS: '+(1+(state.unlocked.edit?1:0)+(state.unlocked.biz?1:0))+'/3';
-  // core (comandante E)
-  const c=state.core;
-  const cs=document.getElementById('sys-state');
-  if(cs) cs.textContent=
-    `COMANDANTE E (CORE)\n`+
-    `  Nível: ${c.level}  |  Ordens: ${c.orders}\n`+
-    `  Buff estação: x${c.buff.toFixed(2)}\n`+
-    `  Estado: ${c.status}\n`+
-    `Agentes: ${state.agents.length}\n`+
-    `Produtividade média: ${avgProd()}\n`+
-    `Clips forjados: ${state.agents.reduce((a,x)=>a+x.clips,0)}\n`+
-    `Salas ativas: ${1+(state.unlocked.edit?1:0)+(state.unlocked.biz?1:0)}/3\n`+
-    `Velocidade: ${state.speed}x`;
-  // unlock Sala 2 (Negócios) a $100K
-  if(!state.unlocked.biz&&state.capital>=100000){state.unlocked.biz=true;openBiz();
-    for(let i=0;i<3;i++)state.plans.push(makePlan());
-    log('🔓 SALA DE NEGÓCIOS ANGOLA desbloqueada!','e');}
-  // unlock Sala 3 (Edição) a $10K
-  if(!state.unlocked.edit&&state.capital>=10000){state.unlocked.edit=true;log('🔓 SALA DE EDIÇÃO desbloqueada!','e');}
-}
-// ===== FLUXO / CADEIA DE TRABALHO (criador->editor->publicador) =====
-const FLOW_STAGES=['SCOUT','EDIT','PUBLISH','$'];
-function spawnFlow(a){
-  // pacote viaja pelas estações; cor consoante o role de origem
-  const col = a.role==='SCOUT'?'rgba(143,179,90,0.9)'
-            : a.role==='EDITOR'?'rgba(217,154,62,0.9)'
-            : a.role==='PUBLISHER'?'rgba(120,180,230,0.9)'
-            : 'rgba(143,179,90,0.7)';
-  state.flow.push({x:ROOM.x+20, y:a.py, stage:0, col, life:0});
-}
-function updateFlow(){
-  state.flow.forEach(p=>{ p.life+=state.speed; p.x+=state.speed*1.4;
-    if(p.x>ROOM.x+ROOM.w-20){p.stage=Math.min(p.stage+1, FLOW_STAGES.length-1); p.x=ROOM.x+20;} });
-  state.flow=state.flow.filter(p=>p.life<400);
-}
-
-// ===== TERMINAL DENSO (ecrã lateral tipo ULTRON) =====
-function renderAgents(){
-  const box=document.getElementById('agent-list');box.innerHTML='';
-  // ordena por role p/ parecer elenco de ecossistema
-  const order=ROLES;
-  const sorted=[...state.agents].sort((a,b)=>order.indexOf(a.role)-order.indexOf(b.role));
-  if(!sorted.length){box.innerHTML='<div class="locked">Nenhum agente online. Recruta para ativar o ecossistema.</div>';return;}
-  const live=state.running;
-  sorted.forEach(a=>{
-    const d=document.createElement('div');d.className='agent'+(live&&a.busy>0?' on':'');
-    d.innerHTML=`<div class="agent-avatar">${a.callsign[0]}</div>
-      <div class="agent-info">
-        <div class="agent-name">${a.callsign} <span class="role-tag">${a.role}</span> <span class="lv">Lv.${a.level}</span></div>
-        <div class="agent-task">${live&&a.busy>0?'▸ '+a.task:'· a descansar'}</div>
-        <div class="bar-mini"><i style="width:${a.productivity*100}%"></i></div>
-      </div>
-      <div class="agent-stat">${a.clips}<span style="font-size:8px;color:var(--ink-faint)"> clips</span></div>`;
-    box.appendChild(d);
-  });
-  // contador por role (footer do terminal)
-  const cnt={};state.agents.forEach(a=>cnt[a.role]=(cnt[a.role]||0)+1);
-  const f=document.createElement('div');f.className='term-foot';
-  f.textContent='ONLINE: '+ROLES.filter(r=>cnt[r]).map(r=>`${r}×${cnt[r]}`).join('  ');
-  box.appendChild(f);
-}
-const MILESTONES=[1,10,100,1000,10000,100000,1000000,10000000,100000000,500000000,1000000000,2000000000];
-let lastMile=-1;
-function checkMilestones(){
-  const m=MILESTONES.filter(x=>state.capital>=x).pop();
-  if(m&&m!==lastMile){lastMile=m;const p=document.getElementById('milestone-pop');
-    p.textContent=m>=GOAL?'💀 $2B CONQUISTADOS — MISSÃO GHOST COMPLETA':'MILESTONE: '+fmtMoney(m);
-    p.classList.add('show');setTimeout(()=>p.classList.remove('show'),2600);
-    log(`⭐ MILESTONE ${fmtMoney(m)} atingido!`,'e');}
-}
-
-// ===== LOOP =====
+// ===== LOOP DA ESTACAO =====
 let timer=null;
 function tick(){
   if(!state.running)return;
   state.simSeconds+=state.speed;
   coreTick();
-  planTick();
-  coreGovernBiz();
-  let cv2=0,cm=0;
-  state.agents.forEach(a=>{
-    if(a.busy>0){a.busy-=state.speed;
-      if(a.busy<=0){a.clips++;a.xp+=10;
-        const views=rint(200,5000)*(1+a.level*0.3)*a.productivity*state.core.buff;
-        const money=views*0.05;
-        cv2+=views;cm+=money;state.views+=views;state.capital+=money;
-        if(a.xp>=100){a.xp=0;a.level++;a.productivity=Math.min(0.99,a.productivity+0.03);log(`${a.callsign} subiu para Lv.${a.level}!`,'e');}
-        // completou tarefa -> lança pacote no fluxo (cadeia criador->editor->publicador)
-        spawnFlow(a);
-        a.task=randTask(a.role);a.thought=a.task;a.busy=rint(3,10);
-      }
-    } else {a.task=randTask(a.role);a.thought=a.task;a.busy=rint(3,10);}
+  let cm=0;
+  state.rooms.forEach(room=>{
+    room.agents.forEach(a=>{
+      if(a.busy>0){a.busy-=state.speed;
+        if(a.busy<=0){
+          a.clips++;a.xp+=10;
+          let gain=0;
+          if(room.id==='r1'){ // criadores -> views (boost por qualidade+core)
+            const views=rint(200,5000)*(1+a.level*0.3)*a.productivity*state.qualityMult*state.core.buff;
+            gain=views*0.05; state.views+=views;
+          } else if(room.id==='r2'){ // negocios -> $
+            gain=rint(50,800)*(1+a.level*0.2)*a.productivity*state.core.buff;
+          } else if(room.id==='r3'){ // edicao -> eleva qualidade global
+            state.qualityMult=Math.min(4.0,state.qualityMult+0.01*a.productivity*state.core.buff);
+            gain=rint(10,120)*a.productivity; // pequena $
+          }
+          a.contrib+=gain; room.contrib+=gain; cm+=gain; state.capital+=gain;
+          if(a.xp>=100){a.xp=0;a.level++;a.productivity=Math.min(0.99,a.productivity+0.03);
+            log(`${a.callsign} (${room.num}) subiu para Lv.${a.level}!`,'e');}
+          a.task=randTask(room,a.role);a.busy=rint(3,10);
+          spawnFlow(room,a);
+        }
+      } else {a.task=randTask(room,a.role);a.busy=rint(3,10);}
+    });
   });
+  state.rate=cm;
   updateFlow();
-  if(state.simSeconds%10===0){renderHUD();renderAgents();renderBiz();}
+  if(state.simSeconds%10===0){renderHUD();renderRooms();renderCore();renderMaster();}
   checkMilestones();
   timer=setTimeout(tick,1000);
 }
-function start(){if(state.running)return;if(!state.agents.length)recruit(3);state.running=true;
+
+// ===== FLUXO (pacotes a viajar dentro de cada sala) =====
+function spawnFlow(room,a){
+  state.flow.push({roomId:room.id, life:0, col:`rgba(${room.color},0.9)`, py:rint(40,360)});
+}
+function updateFlow(){
+  state.flow.forEach(p=>{p.life+=state.speed;});
+  state.flow=state.flow.filter(p=>p.life<200);
+}
+
+// ===== HUD / RENDER =====
+function fmtClock(s){return [String(Math.floor(s/3600)).padStart(2,'0'),String(Math.floor(s%3600/60)).padStart(2,'0'),String(s%60).padStart(2,'0')].join(':');}
+function money(n){return '$'+Math.floor(n).toLocaleString('en-US');}
+function log(m,c){const el=document.getElementById('log');const d=document.createElement('div');d.innerHTML=`<span class="t">[${fmtClock(state.simSeconds)}] </span><span class="${c||''}">${m}</span>`;el.appendChild(d);el.scrollTop=el.scrollHeight;while(el.children.length>120)el.removeChild(el.firstChild);}
+
+function renderHUD(){
+  document.getElementById('hud-capital').textContent=money(state.capital);
+  document.getElementById('hud-rate').textContent=money(state.rate)+'/ciclo';
+  document.getElementById('hud-views').textContent=state.views.toLocaleString('en-US');
+  document.getElementById('hud-agents').textContent=state.rooms.reduce((s,r)=>s+r.agents.length,0);
+  document.getElementById('hud-rooms').textContent=state.rooms.length;
+  document.getElementById('sim-clock').textContent='T+'+fmtClock(state.simSeconds);
+  const p=Math.min(100,state.capital/GOAL*100);
+  document.getElementById('goal-fill').style.width=p+'%';
+  document.getElementById('goal-pct').textContent=(state.capital/GOAL*100).toFixed(6)+'%';
+}
+function renderRooms(){
+  const box=document.getElementById('rooms');box.innerHTML='';
+  const live=state.running;
+  state.rooms.forEach(room=>{
+    const sorted=[...room.agents].sort((a,b)=>room.roles.indexOf(a.role)-room.roles.indexOf(b.role));
+    const d=document.createElement('div');d.className='room';d.style.setProperty('--rc',`rgb(${room.color})`);
+    let html=`<div class="room-head"><span class="room-name">${room.name}</span><span class="room-num">${room.num}</span></div>
+      <div class="room-func">${room.func}</div>
+      <div class="room-contrib">CONTRIB: <b>${money(room.contrib)}</b> · QTD ${room.agents.length}</div>`;
+    if(!sorted.length){html+='<div style="font-size:10px;color:var(--ink-faint)">Sala vazia — recruta agentes.</div>';}
+    sorted.forEach(a=>{
+      html+=`<div class="agent${live&&a.busy>0?' on':''}">
+        <div class="agent-avatar">${a.callsign[0]}</div>
+        <div class="agent-info">
+          <div class="agent-name">${a.callsign} <span class="role-tag">${a.role}</span> <span class="lv">Lv.${a.level}</span></div>
+          <div class="agent-task">${live&&a.busy>0?'▸ '+a.task:'· a descansar'}</div>
+          <div class="bar-mini"><i style="width:${a.productivity*100}%"></i></div>
+        </div></div>`;
+    });
+    const cnt={};room.agents.forEach(a=>cnt[a.role]=(cnt[a.role]||0)+1);
+    html+=`<div class="term-foot">ONLINE: ${room.roles.filter(r=>cnt[r]).map(r=>`${r}×${cnt[r]}`).join('  ')}</div>`;
+    d.innerHTML=html;box.appendChild(d);
+  });
+}
+function renderCore(){
+  const c=state.core;
+  document.getElementById('core-box').innerHTML=
+    `<span class="ttl">COMANDANTE "E" (CORE)</span>`+
+    `Nivel: ${c.level}  |  Ordens: ${c.orders}\n`+
+    `Buff estacao: x${c.buff.toFixed(2)}\n`+
+    `Estado: ${c.status}\n`+
+    `Qualidade global: x${state.qualityMult.toFixed(2)}\n`+
+    `Salas: ${state.rooms.length}  |  Agentes: ${state.rooms.reduce((s,r)=>s+r.agents.length,0)}`;
+}
+function renderMaster(){
+  const totalAgents=state.rooms.reduce((s,r)=>s+r.agents.length,0);
+  const totalContrib=state.rooms.reduce((s,r)=>s+r.contrib,0);
+  document.getElementById('master').innerHTML=
+    `Salas operacionais: <b style="color:var(--green)">${state.rooms.length}</b><br>`+
+    `Agentes totais: <b style="color:var(--green)">${totalAgents}</b><br>`+
+    `Contribuicao total: <b style="color:var(--green)">${money(totalContrib)}</b><br>`+
+    `Views acumuladas: <b style="color:var(--green)">${state.views.toLocaleString('en-US')}</b><br>`+
+    `Qualidade (RPM): <b style="color:var(--amber)">x${state.qualityMult.toFixed(2)}</b><br>`+
+    `Velocidade: <b style="color:var(--green)">${state.speed}x</b>`;
+}
+
+const MILESTONES=[1,10,100,1000,10000,100000,1000000,10000000,100000000,500000000,1000000000,2000000000];
+let lastMile=-1;
+function checkMilestones(){
+  const m=MILESTONES.filter(x=>state.capital>=x).pop();
+  if(m&&m!==lastMile){lastMile=m;const p=document.getElementById('milestone-pop');
+    p.textContent=m>=GOAL?'💀 $2B CONQUISTADOS — MISSAO GHOST COMPLETA':'MILESTONE: '+money(m);
+    p.classList.add('show');setTimeout(()=>p.classList.remove('show'),2600);
+    log(`MILESTONE ${money(m)} atingido!`,'e');}
+}
+
+// ===== STATION MAP (canvas) =====
+const cv=document.getElementById('station');const ctx=cv.getContext('2d');
+function roomRect(i){ // 3 salas em grelha 3x1 no canvas
+  const W=cv.width; const w=(W-40)/3, h=300;
+  return {x:20+i*w, y:50, w:w, h:h};
+}
+function drawStation(){
+  const W=cv.width,H=cv.height;
+  ctx.fillStyle='#070906';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(143,179,90,0.06)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // salas como modulos
+  state.rooms.forEach((room,i)=>{
+    const r=roomRect(i);
+    const col=`rgb(${room.color})`;
+    const grd=ctx.createLinearGradient(r.x,r.y,r.x,r.y+r.h);
+    grd.addColorStop(0,`rgba(${room.color},0.10)`);grd.addColorStop(1,`rgba(${room.color},0.02)`);
+    ctx.fillStyle=grd;ctx.fillRect(r.x,r.y,r.w,r.h);
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.strokeRect(r.x,r.y,r.w,r.h);
+    ctx.fillStyle=col;ctx.font='600 18px Teko, sans-serif';
+    ctx.fillText(room.num+' '+room.name,r.x+10,r.y+24);
+    ctx.fillStyle='rgba(154,156,140,0.8)';ctx.font='9px "IBM Plex Mono"';
+    ctx.fillText(room.func,r.x+10,r.y+38);
+    // agentes como pontos a trabalhar
+    room.agents.forEach((a,j)=>{
+      const px=r.x+20+(j%6)*((r.w-40)/6), py=r.y+70+Math.floor(j/6)*26;
+      ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);
+      ctx.fillStyle=a.busy>0?col:'rgba(90,99,85,0.7)';ctx.fill();
+      ctx.strokeStyle='#0a0c08';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    if(!room.agents.length){ctx.fillStyle='rgba(95,99,85,0.7)';ctx.font='10px "IBM Plex Mono"';
+      ctx.fillText('vazia',r.x+10,r.y+70);}
+  });
+
+  // fluxo (pacotes)
+  state.flow.forEach(p=>{
+    const idx=state.rooms.findIndex(x=>x.id===p.roomId);
+    const r=roomRect(idx);
+    ctx.save();ctx.globalAlpha=Math.max(0.12,1-p.life/200);
+    ctx.fillStyle=p.col;
+    const fx=r.x+20+(p.life*4)%(r.w-40);
+    const fy=r.y+ (p.py%(r.h-20)) +20;
+    ctx.beginPath();ctx.arc(fx,fy,4,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  });
+
+  requestAnimationFrame(drawStation);
+}
+
+// ===== CONTROLOS =====
+function start(){if(state.running)return;
+  if(!state.rooms.some(r=>r.agents.length))state.rooms.forEach(r=>recruitRoom(r,2));
+  state.running=true;
   document.getElementById('btn-start').disabled=true;document.getElementById('btn-pause').disabled=false;
-  log('▶ TEMSPEST STATION online. Os escravos do Ghost começaram a trabalhar.','e');tick();}
+  log('ECOSYSTEMA ativado. Todas as salas a trabalhar rumo aos $2B.','e');tick();}
 function pause(){state.running=false;document.getElementById('btn-start').disabled=false;document.getElementById('btn-pause').disabled=true;
-  log('❚❚ Estação pausada.','');if(timer)clearTimeout(timer);}
-function recruit(n){n=n||1;for(let i=0;i<n;i++){const a=makeAgent();a.busy=rint(3,10);state.agents.push(a);}
-  log(`+${n} criador(es) recrutado(s).`,'e');renderAgents();renderHUD();}
-function reset(){pause();state={running:false,speed:parseInt(document.getElementById('speed').value),simSeconds:0,capital:0,views:0,rate:0,agents:[],unlocked:{edit:false,biz:false},plans:[],flow:[],
-  core:{level:1,xp:0,orders:0,buff:1.0,status:'A aguardar ordens'}};lastMile=-1;document.getElementById('log').innerHTML='';document.getElementById('agent-list').innerHTML='';renderHUD();log('↺ Estação reiniciada.','');}
+  log('Estacao pausada.','');if(timer)clearTimeout(timer);}
+function recruitRoom(room,n){n=n||1;for(let i=0;i<n;i++){const role=room.roles[rint(0,room.roles.length-1)];const a=makeAgent(room,role);a.busy=rint(3,10);room.agents.push(a);}}
+function recruit(){state.rooms.forEach(r=>recruitRoom(r,1));
+  log('+1 agente por sala recrutado.','e');renderRooms();renderHUD();}
+function reset(){pause();state=freshState();lastMile=-1;
+  document.getElementById('log').innerHTML='';renderHUD();renderRooms();renderCore();renderMaster();
+  log('Ecossistema reiniciado.','');}
 
 document.getElementById('btn-start').addEventListener('click',start);
 document.getElementById('btn-pause').addEventListener('click',pause);
-document.getElementById('btn-recruit').addEventListener('click',()=>recruit(1));
+document.getElementById('btn-recruit').addEventListener('click',recruit);
 document.getElementById('btn-reset').addEventListener('click',reset);
-document.getElementById('speed').addEventListener('change',e=>{state.speed=parseInt(e.target.value);renderHUD();});
+document.getElementById('speed').addEventListener('change',e=>{state.speed=parseInt(e.target.value);renderMaster();});
 
-// clip player
-document.getElementById('btn-load-clip').addEventListener('click',()=>document.getElementById('clip-input').click());
-document.getElementById('clip-input').addEventListener('change',e=>{
-  const f=e.target.files[0];
-  if(!f)return;
-  const url=URL.createObjectURL(f);
-  const v=document.getElementById('clip-player');
-  v.src=url;v.style.display='block';v.play().catch(()=>{});
-  document.getElementById('clip-name').textContent=f.name+' ('+(f.size/1048576).toFixed(0)+'MB)';
-  log('📺 Clip de teste carregado: '+f.name,'e');
-});
-
-// ===== SALA 2 — NEGÓCIOS ANGOLA =====
-function openBiz(){
-  const b=document.getElementById('biz-body');
-  b.innerHTML=`
-    <div class="file-row">
-      <button class="btn ghost" id="btn-new-plan" style="font-size:14px;padding:6px 12px;">+ Novo plano de negócio</button>
-      <button class="btn ghost" id="btn-load-biz" style="font-size:14px;padding:6px 12px;">📂 Carregar ficheiro de negócio</button>
-      <input type="file" id="biz-input" accept=".json,.md,.txt,.csv" style="display:none;">
-      <span id="biz-file" style="font-size:11px;color:var(--ink-faint);"></span>
-    </div>
-    <div class="room-sub" style="font-size:10px;color:var(--green);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">⚡ Gerido pelo CORE "E" — aprova planos e mitiga risco</div>
-    <div class="master-grid" id="biz-master"></div>
-    <div id="biz-plans"></div>`;
-  document.getElementById('btn-new-plan').addEventListener('click',()=>{state.plans.push(makePlan());log('📊 Novo plano de negócio criado: '+state.plans[state.plans.length-1].name,'e');renderBiz();});
-  document.getElementById('btn-load-biz').addEventListener('click',()=>document.getElementById('biz-input').click());
-  document.getElementById('biz-input').addEventListener('change',e=>{
-    const f=e.target.files[0];if(!f)return;
-    const r=new FileReader();
-    r.onload=()=>{
-      let data={};
-      try{ if(f.name.endsWith('.json')) data=JSON.parse(r.result);
-           else { const m=r.result.match(/setor[: ]+([^\n]+)/i); if(m)data.sector=m[1].trim(); } }catch(_){}
-      const p=makePlan(data); state.plans.push(p);
-      document.getElementById('biz-file').textContent=f.name;
-      log('📂 Ficheiro de negócio carregado: '+f.name+' → plano "'+p.name+'"','e');
-      renderBiz();
-    };
-    r.readAsText(f);
-  });
-  renderBiz();
-}
-function renderBiz(){
-  if(!state.unlocked.biz)return;
-  const m=planMaster();
-  const mg=document.getElementById('biz-master');
-  if(mg) mg.innerHTML=`
-    <div class="master-cell"><div class="master-val">${m.n}</div><div class="master-lab">Planos</div></div>
-    <div class="master-cell"><div class="master-val">${fmtMoney(m.inv)}</div><div class="master-lab">Investido</div></div>
-    <div class="master-cell"><div class="master-val">${fmtMoney(m.rev)}</div><div class="master-lab">Receita acc.</div></div>
-    <div class="master-cell"><div class="master-val">${m.auto}/${m.n}</div><div class="master-lab">Auto-sust.</div></div>`;
-  const box=document.getElementById('biz-plans');
-  if(!box)return;
-  box.innerHTML='';
-  if(!state.plans.length){box.innerHTML='<div class="locked">Nenhum plano ainda. Cria ou carrega um ficheiro.</div>';return;}
-  state.plans.forEach(p=>{
-    const d=document.createElement('div');d.className='plan-card';
-    d.innerHTML=`
-      <div class="plan-top"><div><span class="plan-name">${p.name}</span> <span class="plan-sector">${p.sector}</span></div>
-        <span class="plan-status ${p.status==='AUTO-SUSTENTÁVEL'?'auto':''}">${p.status}</span></div>
-      <div class="plan-grid">
-        <div>Investido: <b>${fmtMoney(p.invested)}</b></div>
-        <div>Custo/mês: <b>${fmtMoney(p.monthlyCost)}</b></div>
-        <div>Rev/mês: <b>${fmtMoney(p.monthlyRev)}</b></div>
-        <div>Break-even: <b>${p.breakeven>=999?'∞':p.breakeven+'m'}</b></div>
-        <div>Risco: <b>${p.risk}%</b></div>
-        <div>Acc: <b>${fmtMoney(p.accRev)}</b></div>
-      </div>
-      <div class="plan-bar"><i style="width:${p.progress*100}%"></i></div>`;
-    box.appendChild(d);
-  });
-}
-
-// init — pré-popula Sala 1 com equipa em espera (visível logo à entrada)
-['VECTOR','FORCE','PULSE'].forEach(cs=>{
-  const a=makeAgent(cs); a.busy=0; state.agents.push(a);
-});
-renderHUD();renderAgents();
-log('TEMSPEST STATION v0.8 online. Clica em INICIAR p/ ativar o ecossistema.','');
+// init — ecossistema pre-populado (salas visiveis logo a entrada)
+state.rooms.forEach(r=>recruitRoom(r,2));
+renderHUD();renderRooms();renderCore();renderMaster();
+log('TEMSPEST STATION pronto. Clica em ATIVAR p/ o ecossistema trabalhar.','');
 drawStation();
 </script>
 </body>
