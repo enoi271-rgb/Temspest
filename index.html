@@ -206,6 +206,7 @@ function freshState(){
     qualityMult:1.0,
     rooms: ROOM_DEFS.map(r=>({ ...r, agents:[], contrib:0 })),
     flow:[],
+    hermes:{ callsign:'HERMES', level:1, xp:0, productivity:1.0, working:false, orders:0 },
     core:{ level:1, xp:0, orders:0, buff:1.0, status:'A aguardar ordens' }
   };
 }
@@ -259,10 +260,14 @@ function tick(){
           a.contrib+=gain; room.contrib+=gain; cm+=gain; state.capital+=gain;
           if(a.xp>=100){a.xp=0;a.level++;a.productivity=Math.min(0.99,a.productivity+0.03);
             log(`${a.callsign} (${room.num}) subiu para Lv.${a.level}!`,'e');}
+          // HERMES (sala E) atribui a tarefa e garante trabalho continuo
+          state.hermes.working=true; state.hermes.orders++;
           a.task=randTask(room,a.role);a.busy=rint(3,10);
           spawnFlow(room,a);
         }
-      } else {a.task=randTask(room,a.role);a.busy=rint(3,10);}
+      } else { // Hermes reativa quem parar: ninguem fica ocioso
+        state.hermes.working=true;
+        a.task=randTask(room,a.role);a.busy=rint(3,10);}
     });
   });
   state.rate=cm;
@@ -272,13 +277,20 @@ function tick(){
   timer=setTimeout(tick,1000);
 }
 
-// ===== FLUXO (pacotes a viajar dentro de cada sala) =====
+// fluxo circular: S1->E->S2->E->S3
 function spawnFlow(room,a){
-  state.flow.push({roomId:room.id, life:0, col:`rgba(${room.color},0.9)`, py:rint(40,360)});
+  const order=['r1','r2','r3'];
+  const idx=order.indexOf(room.id);
+  const next=order[(idx+1)%3];
+  state.flow.push({from:room.id, to:next, t:0, col:`rgba(${room.color},0.9)`});
 }
 function updateFlow(){
-  state.flow.forEach(p=>{p.life+=state.speed;});
-  state.flow=state.flow.filter(p=>p.life<200);
+  const order=['r1','r2','r3'];
+  state.flow.forEach(p=>{
+    p.t+=state.speed*0.01;
+    if(p.t>=1){p.t=0; const i=order.indexOf(p.to); p.from=p.to; p.to=order[(i+1)%3];}
+  });
+  state.flow=state.flow.filter(p=>p.t<1.1);
 }
 
 // ===== HUD / RENDER =====
@@ -329,7 +341,8 @@ function renderCore(){
     `Buff estacao: x${c.buff.toFixed(2)}\n`+
     `Estado: ${c.status}\n`+
     `Qualidade global: x${state.qualityMult.toFixed(2)}\n`+
-    `Salas: ${state.rooms.length}  |  Agentes: ${state.rooms.reduce((s,r)=>s+r.agents.length,0)}`;
+    `Salas: ${state.rooms.length}  |  Agentes: ${state.rooms.reduce((s,r)=>s+r.agents.length,0)}\n`+
+    `HERMES (sup): ${state.hermes.working?'ATIVO':'idle'} · ordens ${state.hermes.orders}`;
 }
 function renderMaster(){
   const totalAgents=state.rooms.reduce((s,r)=>s+r.agents.length,0);
@@ -353,12 +366,16 @@ function checkMilestones(){
     log(`MILESTONE ${money(m)} atingido!`,'e');}
 }
 
-// ===== STATION MAP (canvas) =====
+// ===== STATION MAP (canvas) — hub E central + 3 salas radiais + pontes =====
 const cv=document.getElementById('station');const ctx=cv.getContext('2d');
-function roomRect(i){ // 3 salas em grelha 3x1 no canvas
-  const W=cv.width; const w=(W-40)/3, h=300;
-  return {x:20+i*w, y:50, w:w, h:h};
-}
+// posicoes: E no centro; S1 esquerda, S2 cima-direita, S3 baixo-direita
+const HUB={x:cv.width/2, y:cv.height/2, r:46};
+const SALA_POS=[
+  {x:40, y:cv.height/2-120, w:300, h:240},         // S1 esquerda
+  {x:cv.width-400, y:40, w:360, h:150},       // S2 cima-direita
+  {x:cv.width-400, y:cv.height-190, w:360, h:150} // S3 baixo-direita
+];
+function roomRect(i){return SALA_POS[i];}
 function drawStation(){
   const W=cv.width,H=cv.height;
   ctx.fillStyle='#070906';ctx.fillRect(0,0,W,H);
@@ -366,40 +383,86 @@ function drawStation(){
   for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
 
-  // salas como modulos
+  // PONTES: E -> cada sala (linhas de circuito a pulsar) + no de ligacao
   state.rooms.forEach((room,i)=>{
-    const r=roomRect(i);
+    const s=SALA_POS[i]; const sx=s.x+s.w/2, sy=s.y+s.h/2;
+    const pulse=0.3+0.4*Math.abs(Math.sin(Date.now()/500 + i));
+    ctx.strokeStyle=`rgba(143,179,90,${pulse})`;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(HUB.x,HUB.y);ctx.lineTo(sx,sy);ctx.stroke();
+    const mx=(HUB.x+sx)/2, my=(HUB.y+sy)/2;
+    ctx.fillStyle='rgba(143,179,90,0.85)';ctx.beginPath();ctx.arc(mx,my,4,0,Math.PI*2);ctx.fill();
+  });
+
+  // SALAS (modulos separados)
+  state.rooms.forEach((room,i)=>{
+    const s=SALA_POS[i];
     const col=`rgb(${room.color})`;
-    const grd=ctx.createLinearGradient(r.x,r.y,r.x,r.y+r.h);
+    const grd=ctx.createLinearGradient(s.x,s.y,s.x,s.y+s.h);
     grd.addColorStop(0,`rgba(${room.color},0.10)`);grd.addColorStop(1,`rgba(${room.color},0.02)`);
-    ctx.fillStyle=grd;ctx.fillRect(r.x,r.y,r.w,r.h);
-    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.strokeRect(r.x,r.y,r.w,r.h);
+    ctx.fillStyle=grd;ctx.fillRect(s.x,s.y,s.w,s.h);
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.strokeRect(s.x,s.y,s.w,s.h);
     ctx.fillStyle=col;ctx.font='600 18px Teko, sans-serif';
-    ctx.fillText(room.num+' '+room.name,r.x+10,r.y+24);
+    ctx.fillText(room.num+' '+room.name,s.x+10,s.y+24);
     ctx.fillStyle='rgba(154,156,140,0.8)';ctx.font='9px "IBM Plex Mono"';
-    ctx.fillText(room.func,r.x+10,r.y+38);
-    // agentes como pontos a trabalhar
+    ctx.fillText(room.func,s.x+10,s.y+38);
     room.agents.forEach((a,j)=>{
-      const px=r.x+20+(j%6)*((r.w-40)/6), py=r.y+70+Math.floor(j/6)*26;
-      ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);
+      const px=s.x+24+(j%8)*((s.w-48)/8), py=s.y+70+Math.floor(j/8)*24;
+      ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);
       ctx.fillStyle=a.busy>0?col:'rgba(90,99,85,0.7)';ctx.fill();
       ctx.strokeStyle='#0a0c08';ctx.lineWidth=1.5;ctx.stroke();
     });
     if(!room.agents.length){ctx.fillStyle='rgba(95,99,85,0.7)';ctx.font='10px "IBM Plex Mono"';
-      ctx.fillText('vazia',r.x+10,r.y+70);}
+      ctx.fillText('vazia',s.x+10,s.y+70);}
   });
 
-  // fluxo (pacotes)
+  // FLUXO (pacotes a circular S1->E->S2->E->S3)
   state.flow.forEach(p=>{
-    const idx=state.rooms.findIndex(x=>x.id===p.roomId);
-    const r=roomRect(idx);
-    ctx.save();ctx.globalAlpha=Math.max(0.12,1-p.life/200);
+    const fi=state.rooms.findIndex(x=>x.id===p.from);
+    const ti=state.rooms.findIndex(x=>x.id===p.to);
+    const f=SALA_POS[fi], t=SALA_POS[ti];
+    const fx=f.x+f.w/2, fy=f.y+f.h/2, tx=t.x+t.w/2, ty=t.y+t.h/2;
+    const mx=HUB.x, my=HUB.y;
+    let x,y;
+    if(p.t<0.5){const k=p.t/0.5; x=fx+(mx-fx)*k; y=fy+(my-fy)*k;}
+    else {const k=(p.t-0.5)/0.5; x=mx+(tx-mx)*k; y=my+(ty-my)*k;}
+    ctx.save();ctx.globalAlpha=Math.max(0.15,1-p.t);
     ctx.fillStyle=p.col;
-    const fx=r.x+20+(p.life*4)%(r.w-40);
-    const fy=r.y+ (p.py%(r.h-20)) +20;
-    ctx.beginPath();ctx.arc(fx,fy,4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();
     ctx.restore();
   });
+
+  // HUB "E" (central, sempre ligado)
+  const pulse=state.running?(0.55+0.45*Math.abs(Math.sin(Date.now()/300))):0.4;
+  ctx.save();ctx.translate(HUB.x,HUB.y);
+  ctx.beginPath();
+  for(let i=0;i<6;i++){const ang=Math.PI/3*i-Math.PI/6;const px=Math.cos(ang)*HUB.r,py=Math.sin(ang)*HUB.r;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+  ctx.closePath();
+  const cg=ctx.createRadialGradient(0,0,4,0,0,HUB.r);
+  cg.addColorStop(0,'rgba(143,179,90,0.35)');cg.addColorStop(1,'rgba(77,95,55,0.06)');
+  ctx.fillStyle=cg;ctx.fill();
+  ctx.strokeStyle='rgba(143,179,90,0.9)';ctx.lineWidth=2.5;ctx.stroke();
+  ctx.fillStyle='rgba(143,179,90,0.9)';
+  for(let i=0;i<6;i++){const ang=Math.PI/3*i-Math.PI/6;const px=Math.cos(ang)*(HUB.r+5),py=Math.sin(ang)*(HUB.r+5);ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);ctx.fill();}
+  ctx.fillStyle=`rgba(143,179,90,${pulse})`;
+  ctx.font='600 54px Teko, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('E',0,2);
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.restore();
+  ctx.fillStyle='rgba(143,179,90,0.9)';ctx.font='10px "IBM Plex Mono"';ctx.textAlign='center';
+  ctx.fillText('SALA MAE // CORE',HUB.x,HUB.y+HUB.r+16);
+  ctx.textAlign='left';
+
+  // AGENTE HERMES (na sala E, gere todos os outros)
+  const hm=state.hermes;
+  const hx=HUB.x, hy=HUB.y+HUB.r+34;
+  ctx.beginPath();ctx.arc(hx,hy,7,0,Math.PI*2);
+  ctx.fillStyle=hm.working?'rgba(217,154,62,0.95)':'rgba(90,99,85,0.7)';ctx.fill();
+  ctx.strokeStyle='#0a0c08';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle='#0a0c08';ctx.font='600 11px Teko, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('H',hx,hy);ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='rgba(217,154,62,0.9)';ctx.font='9px "IBM Plex Mono"';ctx.textAlign='center';
+  ctx.fillText('HERMES // SUPERVISOR',HUB.x,HUB.y+HUB.r+50);
+  ctx.textAlign='left';
 
   requestAnimationFrame(drawStation);
 }
