@@ -322,23 +322,21 @@ function tick(){
       if(a.busy>0){a.busy-=state.speed;
         if(a.busy<=0){
           a.clips++;
+          // MODO REAL: os agentes produzem trabalho (XP/morale) mas NAO inventam $/views.
+          // O capital real vem do backend (/api/balance) via carregamento tuo.
           let gain=0, result=0;
-          if(room.id==='r1'){ // criadores -> views (boost por qualidade+core)
-            const views=rint(200,5000)*(1+a.level*0.3)*a.productivity*state.qualityMult*state.core.buff;
-            result=views; gain=views*0.05; state.views+=views;
-          } else if(room.id==='r2'){ // negocios -> $
-            gain=rint(50,800)*(1+a.level*0.2)*a.productivity*state.core.buff; result=gain;
-          } else if(room.id==='r3'){ // edicao -> eleva qualidade global (afeta XP de todos via qualityMult)
+          if(room.id==='r3'){ // edicao -> eleva qualidade global (ainda sim, efeito interno)
             state.qualityMult=Math.min(4.0,state.qualityMult+0.012*a.productivity*state.core.buff);
-            gain=rint(10,120)*a.productivity; result=gain;
+            result=a.productivity*100;
+          } else {
+            result=a.productivity*100*(1+a.level*0.3); // "resultado" relativo p/ XP, nao $
           }
-          // XP proporcional ao RESULTADO produzido: quem produz mais, sobe mais
+          // XP proporcional ao trabalho produzido
           const xpGain=Math.min(60, 6 + Math.floor(result/40) + a.level*2);
-          a.xp+=xpGain; a.contrib+=gain; room.contrib+=gain; cm+=gain; state.capital+=gain;
+          a.xp+=xpGain;
           if(a.xp>=100){a.xp=0;a.level++;
-            a.productivity=Math.min(0.99,a.productivity+0.04); // nivel melhora produtividade
+            a.productivity=Math.min(0.99,a.productivity+0.04);
             log(`${a.callsign} (${room.num}) subiu para Lv.${a.level} (+prod)!`,'e');}
-          // HERMES (sala E) atribui a tarefa e garante trabalho continuo
           state.hermes.working=true; state.hermes.orders++;
           if(a.morale<1) a.morale=Math.min(1,a.morale+0.03);
           if(a.cuts && a.learned>=2){
@@ -348,9 +346,9 @@ function tick(){
             if(a.learned===2)log(a.callsign+' ('+room.num+') aprendeu os cortes — avanca sozinho.','e');
           } else {
             a.state='await'; a.busy=0; if(a.morale>0.2)a.morale-=0.02;
-            state.pending.push({id:a.id, room:room.num, name:a.callsign, role:a.role, result:Math.floor(result), kind:room.id==='r1'?'clip':'plano'});
-            log(a.callsign+' ('+room.num+') terminou — aguarda tua validacao.','e');
-            fetch('/api/notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:a.id,room:room.num,name:a.callsign,role:a.role,result:Math.floor(result),kind:room.id==='r1'?'clip':'plano'})}).catch(()=>{});
+            state.pending.push({id:a.id, room:room.num, name:a.callsign, role:a.role, result:0, kind:room.id==='r1'?'clip':'plano'});
+            log(a.callsign+' ('+room.num+') terminou — aguarda tua validacao (sem valor ficticio).','e');
+            fetch('/api/notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:a.id,room:room.num,name:a.callsign,role:a.role,result:0,kind:room.id==='r1'?'clip':'plano'})}).catch(()=>{});
           }
         }
       } else { // Hermes reativa quem parar: ninguem fica ocioso
@@ -358,9 +356,9 @@ function tick(){
         a.task=randTask(room,a.role);a.busy=rint(3,10);}
     });
   });
-  state.rate=cm;
+  state.rate=0;
   updateFlow();
-  if(state.simSeconds%10===0){renderHUD();renderRooms();renderCore();renderMaster();}
+  if(state.simSeconds%10===0){syncCapitalReal();renderHUD();renderRooms();renderCore();renderMaster();}
   checkMilestones();
   timer=setTimeout(tick,1000);
 }
@@ -456,6 +454,9 @@ function renderMaster(){
 
 const MILESTONES=[1,10,100,1000,10000,100000,1000000,10000000,100000000,500000000,1000000000,2000000000];
 let lastMile=-1;
+function syncCapitalReal(){
+  fetch('/api/balance').then(r=>r.json()).then(b=>{ state.capital=b.capital; state.views=state.views; }).catch(()=>{});
+}
 function checkMilestones(){
   const m=MILESTONES.filter(x=>state.capital>=x).pop();
   if(m&&m!==lastMile){lastMile=m;const p=document.getElementById('milestone-pop');
