@@ -39,6 +39,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE, "finance.db")
 
 WHATSAPP_NUMBER = os.environ.get("TTEMSPEST_WHATSAPP", "244XXXxxxxxxx")
+KZ_PER_USD = float(os.environ.get("KZ_PER_USD", "850"))
 
 app = Flask(__name__)
 _lock = threading.Lock()
@@ -123,6 +124,10 @@ def entry():
     note = d.get("note", "")
     if kind not in ("ganho", "perca") or amount <= 0:
         return jsonify({"ok": False, "reason": "kind invalido ou amount<=0"}), 400
+    currency = (d.get("currency") or "USD").upper()
+    original = amount
+    if currency == "KZ":
+        amount = round(amount / KZ_PER_USD, 2)
     with _lock:
         cx = db()
         cx.execute("INSERT INTO ledger(kind,amount,origin,agent,note) VALUES(?,?,?,?,?)",
@@ -134,13 +139,18 @@ def entry():
         cx.execute("INSERT INTO snapshots(capital) VALUES(?)", (b["capital"],))
         cx.commit()
         cx.close()
-    print(f"ENTRY {kind} {amount} ({origin}) -> capital {b['capital']}")
+    conv = f" ({original:.2f} {currency} -> {amount:.2f} USD)" if currency == "KZ" else ""
+    print(f"ENTRY {kind} {amount} ({origin}) -> capital {b['capital']}{conv}")
     return jsonify({"ok": True, **b})
 
 
 @app.route("/api/balance", methods=["GET"])
 def get_balance():
     return jsonify(balance())
+
+@app.route("/api/rate", methods=["GET"])
+def get_rate():
+    return jsonify({"kz_per_usd": KZ_PER_USD, "usd_per_kz": 1/KZ_PER_USD})
 
 
 # ---------- INFO -> AGENTES -> RESULTADOS ----------

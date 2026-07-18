@@ -181,7 +181,12 @@
     <div style="font-size:10px;color:var(--ink-dim);margin-top:8px;">Carregar GANHO / PERCA</div>
     <select id="r-kind" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
       <option value="ganho">GANHO</option><option value="perca">PERCA</option></select>
-    <input id="r-amt" type="number" step="0.01" placeholder="Valor (USD)" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+    <div style="display:flex;gap:4px;margin:2px 0;">
+      <input id="r-amt" type="number" step="0.01" placeholder="Valor" style="font-family:'IBM Plex Mono';font-size:10px;flex:1;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+      <select id="r-cur" style="font-family:'IBM Plex Mono';font-size:10px;width:64px;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+        <option value="USD">$</option><option value="KZ">Kz</option></select>
+    </div>
+    <div id="r-conv" style="font-size:9px;color:var(--ink-faint);margin-bottom:2px;"></div>
     <input id="r-origin" placeholder="Origem (YouTube/TikTok/IG/Sponsor)" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
     <input id="r-agent" placeholder="Agente" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
     <button class="btn-app" id="btn-entry" style="font-size:13px;padding:3px 10px;width:100%;margin-top:4px;">Registar</button>
@@ -730,9 +735,15 @@ setInterval(()=>{ fetch('/api/decisions').then(r=>r.json()).then(arr=>{ (arr||[]
 const _ci=document.getElementById('clip-input'); if(_ci)_ci.addEventListener('change',uploadClip);
 document.getElementById('btn-entry').addEventListener('click',()=>{
   const kind=document.getElementById('r-kind').value, amount=parseFloat(document.getElementById('r-amt').value||0);
-  const origin=document.getElementById('r-origin').value||'Outro', agent=document.getElementById('r-agent').value||'-';
+  const cur=document.getElementById('r-cur').value, origin=document.getElementById('r-origin').value||'Outro', agent=document.getElementById('r-agent').value||'-';
   if(amount<=0){log('Valor invalido.','');return;}
-  fetch('/api/entry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,amount,origin,agent,note:''})}).then(()=>log('Registado: '+kind+' '+money(amount),'e')).catch(()=>{});
+  fetch('/api/entry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,amount,origin,agent,note:'',currency:cur})}).then(r=>r.json()).then(b=>{ log('Registado: '+kind+' '+money(amount)+(cur==='KZ'?(' -> '+money(b.capital)):'')+' (capital '+money(b.capital)+')','e'); }).catch(()=>{});
+});
+document.getElementById('r-amt').addEventListener('input',()=>{
+  const cur=document.getElementById('r-cur').value, amt=parseFloat(document.getElementById('r-amt').value||0);
+  const conv=document.getElementById('r-conv');
+  if(cur==='KZ'&&amt>0){ fetch('/api/rate').then(r=>r.json()).then(x=>{ conv.textContent='= '+(amt/x.kz_per_usd).toFixed(2)+' USD'; }).catch(()=>{}); }
+  else conv.textContent='';
 });
 document.getElementById('btn-info').addEventListener('click',()=>{
   const text=document.getElementById('r-info').value.trim(); if(!text){log('Informacao vazia.','');return;}
