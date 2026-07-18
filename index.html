@@ -76,6 +76,11 @@
   .agent.await{border-color:var(--amber);background:#1c160c;}
   .agent.await .agent-task{color:var(--amber);}
   .agent.auto.on{border-color:var(--green);background:#0e140c;}
+  .upload-box{border:1px dashed var(--rc,#8fb35a);border-radius:4px;padding:8px;margin:8px 0;background:rgba(143,179,90,0.05);}
+  .ub-title{font-size:10px;color:var(--rc,#8fb35a);margin-bottom:6px;}
+  .upload-box input[type=file]{font-size:10px;color:var(--ink-faint);width:100%;}
+  .cut-row{font-size:9px;color:var(--ink-soft);padding:3px 0;border-bottom:1px solid rgba(143,179,90,0.12);}
+  .cut-row button{background:#4d5f37;color:#eef4e2;border:1px solid #8fb35a;font-size:8px;padding:2px 6px;border-radius:3px;cursor:pointer;margin-left:4px;}
   .notif{font-size:9px;color:var(--amber);margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
   .btn-app,.btn-rej{font-family:'Teko',sans-serif;font-size:12px;padding:2px 8px;border-radius:2px;cursor:pointer;border:1px solid;}
   .btn-app{background:var(--green-dim);border-color:var(--green);color:#eef4e2;}
@@ -229,8 +234,8 @@ function makeAgent(room,role){
   const auto=CUT_ROLES.includes(role);
   return{ id:uid(), roomId:room.id, callsign:CALLSIGN[rint(0,CALLSIGN.length-1)],
     role, level:1, xp:0, productivity:rint(45,92)/100,
-    task:randTask(room,role), busy:rint(3,10), clips:0, contrib:0,
-    state: auto?'auto':'await', cuts:auto, learned:auto?0:null };
+    task:randTask(room,role), busy:rint(3,10), clips:0, contrib:0, morale:1.0,
+    state: auto?'auto':'await', cuts:auto, learned:auto?0:null, sit:true, anim:Math.random()*2 };
 }
 
 let state;
@@ -268,7 +273,7 @@ function coreTick(){
     if(low) cmds.push(`E: reforcar ${low.name} — poucos agentes.`);
     c.status=CORE_TASKS[rint(0,CORE_TASKS.length-1)];
     const aw=state.rooms.flatMap(r=>r.agents).filter(a=>a.state==='await');
-    aw.forEach(a=>{a.state='work';a.busy=rint(3,10);a.task=randTask(state.rooms.find(r=>r.id===a.roomId),a.role);});
+    aw.forEach(a=>{a.state='work';a.busy=rint(3,10);a.task=randTask(state.rooms.find(r=>r.id===a.roomId),a.role);a.morale=Math.min(1,a.morale+0.1);});
     if(aw.length) log('E (HERMES) aprovou '+aw.length+' agente(s) a espera.','e');
     log(cmds[rint(0,cmds.length-1)],'e');
   }
@@ -306,13 +311,14 @@ function tick(){
             log(`${a.callsign} (${room.num}) subiu para Lv.${a.level} (+prod)!`,'e');}
           // HERMES (sala E) atribui a tarefa e garante trabalho continuo
           state.hermes.working=true; state.hermes.orders++;
+          if(a.morale<1) a.morale=Math.min(1,a.morale+0.03);
           if(a.cuts && a.learned>=2){
             a.task=randTask(room,a.role);a.busy=rint(3,10);spawnFlow(room,a);
           } else if(a.cuts){
             a.learned++; a.task=randTask(room,a.role);a.busy=rint(3,10);spawnFlow(room,a);
             if(a.learned===2)log(a.callsign+' ('+room.num+') aprendeu os cortes — avanca sozinho.','e');
           } else {
-            a.state='await'; a.busy=0;
+            a.state='await'; a.busy=0; if(a.morale>0.2)a.morale-=0.02;
             state.pending.push({id:a.id, room:room.num, name:a.callsign, role:a.role, result:Math.floor(result), kind:room.id==='r1'?'clip':'plano'});
             log(a.callsign+' ('+room.num+') terminou — aguarda tua validacao.','e');
             fetch('/api/notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:a.id,room:room.num,name:a.callsign,role:a.role,result:Math.floor(result),kind:room.id==='r1'?'clip':'plano'})}).catch(()=>{});
@@ -370,6 +376,13 @@ function renderRooms(){
     const d=document.createElement('div');d.className='room';d.style.setProperty('--rc',`rgb(${room.color})`);
     let html=`<div class="room-head"><span class="room-name">${room.name}</span><span class="room-num">${room.num}</span></div>
       <div class="room-func">${room.func}</div>
+      ${room.id==='r1'?`
+      <div class="upload-box">
+        <div class="ub-title">⏫ CARREGA UM VIDEO — a Sala de Criacao faz cortes + publicacoes</div>
+        <input type="file" id="clip-input" accept="video/*" />
+        <video id="clip-prev" controls style="display:none;width:100%;max-height:120px;margin-top:6px;background:#000;border-radius:3px;"></video>
+        <div id="clip-cuts"></div>
+      </div>`:''}
       <div class="room-contrib">CONTRIB: <b>${money(room.contrib)}</b> · QTD ${room.agents.length}</div>`;
     if(!sorted.length){html+='<div style="font-size:10px;color:var(--ink-faint)">Sala vazia — recruta agentes.</div>';}
     sorted.forEach(a=>{
@@ -460,18 +473,40 @@ function drawStation(){
     ctx.fillText(room.func,s.x+10,s.y+38);
     room.agents.forEach((a,j)=>{
       const cols=2; const bx=s.x+14+(j%cols)*((s.w-28)/cols);
-      const by=s.y+64+Math.floor(j/cols)*46;
-      const bw=(s.w-28)/cols-8, bh=40;
+      const by=s.y+64+Math.floor(j/cols)*52;
+      const bw=(s.w-28)/cols-8, bh=46;
       ctx.fillStyle='rgba(14,17,11,0.9)';ctx.fillRect(bx,by,bw,bh);
       ctx.strokeStyle=a.busy>0?col:'rgba(90,99,85,0.7)';ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,bh);
-      ctx.fillStyle=col;ctx.font='9px "IBM Plex Mono"';
-      ctx.fillText(a.callsign+' '+a.role,bx+5,by+13);
-      ctx.fillStyle=a.busy>0?'rgba(217,154,62,0.95)':'rgba(154,156,140,0.6)';ctx.font='8px "IBM Plex Mono"';
-      ctx.fillText((a.busy>0?a.task:'idle').slice(0,20),bx+5,by+26);
-      ctx.fillStyle='rgba(143,179,90,0.85)';ctx.beginPath();ctx.arc(bx+bw-6,by+6,3,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='rgba(154,156,140,0.7)';ctx.font='7px "IBM Plex Mono"';ctx.fillText('Lv'+a.level,bx+5,by+38);
-      ctx.fillStyle='rgba(30,36,24,0.9)';ctx.fillRect(bx+5,by+33,bw-10,2);
-      ctx.fillStyle=col;ctx.fillRect(bx+5,by+33,(bw-10)*(a.xp/100),2);
+      // ESTACAO DE SERVICO: cadeira + agente que levanta/senta (movimento p/ morale)
+      a.anim+=0.02; const sitPhase=Math.sin(a.anim+ (a.busy>0?0:1)); 
+      const standing = sitPhase>0;            // alterna sentar/levantar
+      const cx=bx+12, baseY=by+40;            // base da figura
+      const headY = standing? baseY-26 : baseY-16;
+      const torsoTop = standing? baseY-18 : baseY-10;
+      ctx.strokeStyle=a.busy>0?col:'rgba(154,156,140,0.7)';ctx.lineWidth=2;
+      // cadeira
+      ctx.strokeRect(cx-5,baseY-8,10,8);
+      // pernas
+      ctx.beginPath();ctx.moveTo(cx,torsoTop);ctx.lineTo(cx,baseY);ctx.stroke();
+      // torso
+      ctx.beginPath();ctx.moveTo(cx,torsoTop);ctx.lineTo(cx, standing?baseY-18:baseY-10);ctx.stroke();
+      // cabeca
+      ctx.beginPath();ctx.arc(cx,headY,3,0,Math.PI*2);ctx.fillStyle=ctx.strokeStyle;ctx.fill();
+      // estado: sentado/levantado
+      ctx.fillStyle='rgba(154,156,140,0.6)';ctx.font='7px "IBM Plex Mono"';
+      ctx.fillText(standing?'LEVANTA':'SENTA',cx-6,by+6);
+      // texto do agente
+      ctx.fillStyle=col;ctx.font='8px "IBM Plex Mono"';
+      ctx.fillText((a.callsign+' '+a.role).slice(0,18),bx+26,by+13);
+      ctx.fillStyle=a.busy>0?'rgba(217,154,62,0.95)':'rgba(154,156,140,0.6)';ctx.font='7px "IBM Plex Mono"';
+      ctx.fillText((a.busy>0?a.task:'idle').slice(0,20),bx+26,by+25);
+      ctx.fillStyle='rgba(154,156,140,0.7)';ctx.font='7px "IBM Plex Mono"';ctx.fillText('Lv'+a.level,bx+26,by+36);
+      // barras XP + MORALE
+      ctx.fillStyle='rgba(30,36,24,0.9)';ctx.fillRect(bx+5,by+41,bw-10,2);
+      ctx.fillStyle=col;ctx.fillRect(bx+5,by+41,(bw-10)*(a.xp/100),2);
+      ctx.fillStyle='rgba(30,36,24,0.9)';ctx.fillRect(bx+5,by+44,bw-10,2);
+      const mc = a.morale>0.6?'rgba(143,179,90,0.9)':a.morale>0.35?'rgba(217,154,62,0.9)':'rgba(192,74,52,0.9)';
+      ctx.fillStyle=mc;ctx.fillRect(bx+5,by+44,(bw-10)*a.morale,2);
     });
     if(!room.agents.length){ctx.fillStyle='rgba(95,99,85,0.7)';ctx.font='10px "IBM Plex Mono"';
       ctx.fillText('vazia',s.x+10,s.y+70);}
@@ -550,6 +585,29 @@ document.getElementById('btn-recruit').addEventListener('click',recruit);
 document.getElementById('btn-reset').addEventListener('click',reset);
 document.getElementById('speed').addEventListener('change',e=>{state.speed=parseInt(e.target.value);renderMaster();});
 
+function uploadClip(){
+  const inp=document.getElementById('clip-input'); const prev=document.getElementById('clip-prev');
+  const f=inp.files[0]; if(!f){log('Nenhum video selecionado.','');return;}
+  const url=URL.createObjectURL(f); prev.src=url; prev.style.display='block';
+  prev.onloadedmetadata=()=>{
+    const dur=prev.duration||30; const n=Math.max(2,Math.min(6,Math.round(dur/8)));
+    const cutsBox=document.getElementById('clip-cuts'); cutsBox.innerHTML='';
+    const tags=['#TTEMSPESTT','#WarzoneAngola','#GhostAngolano','#GamingAngola','#COD','#Shorts','#TikTokGaming'];
+    log('Video carregado ('+dur.toFixed(0)+'s) — a Sala de Criacao a gerar cortes...','e');
+    for(let i=0;i<n;i++){
+      const t=Math.round(dur*(i+0.5)/n); const kind=['SHORT','CLUTCH','REEL','MONTAGE','TIKTOK'][i%5];
+      const cap=['Clip viral do Ghost','Snipe impossivel','Momento clutch','Edit montage','Top play'][i%5];
+      const pub={id:'cut'+Date.now()+i, room:'R1', name:'EDITOR', role:'EDITOR', kind:'clip', result:rint(800,3000),
+        title:kind+' #'+(i+1)+' — '+cap, caption:cap+' 💀 '+tags.slice(0,5).join(' '), where:['TikTok','YouTube Shorts','Instagram Reel'][i%3], at:t};
+      state.pending.push(pub);
+      cutsBox.innerHTML+='<div class="cut-row">▶ '+fmtClock(t)+' · '+kind+' — '+cap+' <button onclick="approve(\''+pub.id+'\')">✓ Publicar</button></div>';
+      // feed do WhatsApp / servidor
+      fetch('/api/notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pub)}).catch(()=>{});
+    }
+    log(n+' cortes + publicacoes preparadas na Sala de Criacao — aguardam tua validacao.','e');
+    renderPending();
+  };
+}
 function approve(id){
   const a=state.rooms.flatMap(r=>r.agents).find(x=>x.id===id); if(!a)return;
   a.state='work'; a.busy=rint(3,10); a.task=randTask(state.rooms.find(r=>r.id===a.roomId),a.role);
@@ -624,6 +682,7 @@ state.rooms.find(r=>r.id==='r2')._planT=0;
 
 // ponte WhatsApp: poll decisions do servidor (se online)
 setInterval(()=>{ fetch('/api/decisions').then(r=>r.json()).then(arr=>{ (arr||[]).forEach(d=>{ if(d.action==='approve') approve(d.id); else if(d.action==='reject') reject(d.id); }); }).catch(()=>{}); }, 2500); // os agentes comecam a trabalhar ao abrir (sem clicar Ativar)
+const _ci=document.getElementById('clip-input'); if(_ci)_ci.addEventListener('change',uploadClip);
 start();
 </script>
 </body>
