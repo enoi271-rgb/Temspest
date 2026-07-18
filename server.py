@@ -39,7 +39,10 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE, "finance.db")
 
 WHATSAPP_NUMBER = os.environ.get("TTEMSPEST_WHATSAPP", "244XXXxxxxxxx")
-KZ_PER_USD = float(os.environ.get("KZ_PER_USD", "850"))
+KZ_PER_USD = float(os.environ.get("KZ_PER_USD", "850"))  # 1 USD em Kwanza
+IG_TOKEN = os.environ.get("IG_TOKEN", "")
+IG_USER_ID = os.environ.get("IG_USER_ID", "")
+YT_API_KEY = os.environ.get("YT_API_KEY", "")
 
 app = Flask(__name__)
 _lock = threading.Lock()
@@ -83,6 +86,22 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ts TEXT DEFAULT (datetime('now')),
         capital REAL
+    );
+    CREATE TABLE IF NOT EXISTS platform_views (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT DEFAULT (datetime('now')),
+        platform TEXT,
+        video_id TEXT,
+        title TEXT,
+        views INTEGER DEFAULT 0,
+        likes INTEGER DEFAULT 0,
+        url TEXT,
+        hashtags TEXT
+    );
+    CREATE TABLE IF NOT EXISTS hashtag_stats (
+        tag TEXT PRIMARY KEY,
+        total_views INTEGER DEFAULT 0,
+        posts INTEGER DEFAULT 0
     );
     """)
     cx.commit()
@@ -290,6 +309,113 @@ setInterval(()=>location.reload(),7000);
 </body></html>"""
     return Response(html, mimetype="text/html")
 
+
+# ---------- VIEWS REAIS (YouTube / TikTok / Instagram) ----------
+import urllib.request, json as _json
+
+def store_video(platform, video_id, title, views, likes, url, hashtags):
+    with _lock:
+        cx = db()
+        cx.execute("INSERT INTO platform_views(platform,video_id,title,views,likes,url,hashtags) VALUES(?,?,?,?,?,?,?)",
+                   (platform, video_id, title, views, likes, url, hashtags))
+        # atualiza hashtag_stats
+        for t in (hashtags or "").split():
+            t = t.strip()
+            if not t: continue
+            row = cx.execute("SELECT * FROM hashtag_stats WHERE tag=?", (t,)).fetchone()
+            if row:
+                cx.execute("UPDATE hashtag_stats SET total_views=total_views+?, posts=posts+1 WHERE tag=?", (views, t))
+            else:
+                cx.execute("INSERT INTO hashtag_stats(tag,total_views,posts) VALUES(?,?,1)", (t, views))
+        cx.commit(); cx.close()
+
+@app.route("/api/views/manual", methods=["POST"])
+def views_manual():
+    d = request.get_json(force=True)
+    store_video(d.get("platform","Outro"), d.get("video_id","-"), d.get("title",""),
+                int(d.get("views",0)), int(d.get("likes",0)), d.get("url",""), d.get("hashtags",""))
+    return jsonify({"ok": True})
+
+@app.route("/api/ig/sync", methods=["POST"])
+def ig_sync():
+    if not IG_TOKEN or not IG_USER_ID:
+        return jsonify({"ok": False, "reason": "IG_TOKEN/IG_USER_ID em falta no .env"}), 400
+    try:
+        url = f"https://graph.facebook.com/v19.0/{IG_USER_ID}/media?fields=id,caption,media_type,media_url,permalink,like_count,views&access_token={IG_TOKEN}"
+        req = urllib.request.urlopen(url, timeout=20)
+        data = _json.load(req)
+        for m in data.get("data", []):
+            cap = m.get("caption") or ""
+            tags = " ".join([w for w in cap.split() if w.startswith("#")])
+            store_video("Instagram", m.get("id"), (cap[:60] or "post"),
+                        int(m.get("views") or m.get("like_count") or 0),
+                        int(m.get("like_count") or 0), m.get("permalink",""), tags)
+        return jsonify({"ok": True, "synced": len(data.get("data", []))})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/yt/sync", methods=["POST"])
+def yt_sync():
+    if not YT_API_KEY:
+        return jsonify({"ok": False, "reason": "YT_API_KEY em falta no .env"}), 400
+    # requer channel_id no body; busca videos recentes do canal
+    ch = (request.get_json(force=True) or {}).get("channel_id") or request.args.get("channel_id")
+    if not ch: return jsonify({"ok": False, "reason": "channel_id necessario"}), 400
+    try:
+        # lista de uploads
+        u = f"https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id={ch}&key={YT_API_KEY}"
+        cd = _json.load(urllib.request.urlopen(u, timeout=20))
+        upl = cd["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+        pl = f"https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=20&playlistId={upl}&key={YT_API_KEY}"
+        ids = [i["contentDetails"]["videoId"] for i in _json.load(urllib.request.urlopen(pl, timeout=20))["items"]]
+        vurl = f"https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id={','.join(ids)}&key={YT_API_KEY}"
+        for v in _json.load(urllib.request.urlopen(vurl, timeout=20))["items"]:
+            sn = v["snippet"]; st = v.get("statistics", {})
+            tags = " ".join(sn.get("tags", [])[:10])
+            store_video("YouTube", v["id"], sn.get("title",""), int(st.get("viewCount",0)),
+                        int(st.get("likeCount",0)), f"https://youtu.be/{v['id']}", tags)
+        return jsonify({"ok": True, "synced": len(ids)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/analytics", methods=["GET"])
+def analytics():
+    cx = db()
+    total = cx.execute("SELECT COALESCE(SUM(views),0) FROM platform_views").fetchone()[0]
+    by_plat = cx.execute("SELECT platform, COALESCE(SUM(views),0) views, COUNT(*) n FROM platform_views GROUP BY platform ORDER BY views DESC").fetchall()
+    top_v = cx.execute("SELECT platform,title,views,url FROM platform_views ORDER BY views DESC LIMIT 8").fetchall()
+    top_h = cx.execute("SELECT tag,total_views,posts FROM hashtag_stats ORDER BY total_views DESC LIMIT 10").fetchall()
+    cx.close()
+    return jsonify({
+        "total_views": total,
+        "by_platform": [dict(r) for r in by_plat],
+        "top_videos": [dict(r) for r in top_v],
+        "top_hashtags": [dict(r) for r in top_h],
+    })
+
+@app.route("/analytics")
+def analytics_page():
+    try:
+        a = analytics().get_json()
+    except Exception:
+        a = {"total_views":0,"by_platform":[],"top_videos":[],"top_hashtags":[]}
+    plat = "".join(f'<div style="border:1px solid #3d4530;padding:6px 10px;margin:4px 0;font-size:13px;">'
+                   f'<b style="color:#8fb35a">{p["platform"]}</b>: {p["views"]:,} views · {p["n"]} videos</div>' for p in a["by_platform"])
+    tv = "".join(f'<div style="border:1px solid #3d4530;padding:6px 10px;margin:4px 0;font-size:12px;">'
+                 f'{t["platform"]} · <b>{t["views"]:,}</b> views<br><a href="{t["url"]}" style="color:#9a9c8c;font-size:10px">{t["title"]}</a></div>' for t in a["top_videos"])
+    th = "".join(f'<div style="font-size:12px;padding:2px 0;">{h["tag"]} — <b>{h["total_views"]:,}</b> views ({h["posts"]} posts)</div>' for h in a["top_hashtags"])
+    html = f"""<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TEMSPEST // Analytics</title>
+<style>body{{background:#0a0c08;color:#e7e4d6;font-family:monospace;padding:16px;}} h1{{color:#8fb35a;}} h3{{color:#8fb35a;}}</style></head>
+<body>
+<h1>TEMSPEST // ANALYTICS (views reais)</h1>
+<div style="font-size:28px;color:#8fb35a;margin:8px 0;">{a['total_views']:,} views totais</div>
+<h3>Por plataforma</h3>{plat or '<p style="color:#5f6355">Sem dados. Usa /api/views/manual ou sincroniza IG/YT.</p>'}
+<h3>Videos mais assistidos</h3>{tv or '<p style="color:#5f6355">Nenhum.</p>'}
+<h3>Hashtags que atraem (por views)</h3>{th or '<p style="color:#5f6355">Nenhuma.</p>'}
+<p style="color:#9a9c8c;font-size:11px;margin-top:14px;">Os clips guardados estao em clips/ (ver no simulador / repositorio). Planos de negocio em negocios/.</p>
+</body></html>"""
+    return Response(html, mimetype="text/html")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5050))

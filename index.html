@@ -214,6 +214,13 @@
         <div class="panel-head"><span class="panel-num">Σ</span><span class="display panel-title">Mestre</span></div>
         <div id="master" style="font-size:11px;color:var(--ink-dim);line-height:1.8;"></div>
       </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-num">&#9678;</span><span class="display panel-title">Analytics (views reais)</span></div>
+        <div style="font-size:9px;color:var(--ink-faint);line-height:1.6;">
+          <a href="http://192.168.1.71:5050/analytics" target="_blank" style="color:var(--amber);">Abrir p&aacute;gina de Analytics (telem&oacute;vel/Mac)</a><br>
+          Sincroniza Instagram/TikTok/YouTube para contar views por plataforma, top v&iacute;deos e hashtags que atraem.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -455,7 +462,8 @@ function renderMaster(){
 const MILESTONES=[1,10,100,1000,10000,100000,1000000,10000000,100000000,500000000,1000000000,2000000000];
 let lastMile=-1;
 function syncCapitalReal(){
-  fetch('/api/balance').then(r=>r.json()).then(b=>{ state.capital=b.capital; state.views=state.views; }).catch(()=>{});
+  fetch('/api/balance').then(r=>r.json()).then(b=>{ state.capital=b.capital; }).catch(()=>{});
+  fetch('/api/analytics').then(r=>r.json()).then(a=>{ state.views=a.total_views||0; }).catch(()=>{});
 }
 function checkMilestones(){
   const m=MILESTONES.filter(x=>state.capital>=x).pop();
