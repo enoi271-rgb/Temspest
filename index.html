@@ -168,7 +168,33 @@ const GOAL=2_000_000_000;
 const NAMES=["Sombra","T-Troop","Vulto","Fantasma-X","Calado","Névoa","Kamba","Sniper-77","Zero","Cobra","Relâmpago","Quieto"];
 const TASKS=["A gravar snipe","A editar clutch","A subir short","A analyzar trends","A montar thumbnail","A estudar meta","A reagir a clip"];
 
-let state={running:false,speed:20,simSeconds:0,capital:0,views:0,rate:0,agents:[],unlocked:{edit:false,biz:false}};
+let state={running:false,speed:20,simSeconds:0,capital:0,views:0,rate:0,agents:[],unlocked:{edit:false,biz:false},
+  core:{level:1,xp:0,orders:0,buff:1.0,status:'A aguardar ordens'}};
+
+// Comandante "E" — orquestrador da estação (estilo ULTRON)
+const CORE_TASKS=['A coordenar prioridades','A aprovar decisões','A alinhar agentes','A otimizar rotas','A auditar salas','A planeiar expansão'];
+function coreTick(){
+  const c=state.core;
+  // ganha XP por ciclo de sim; acelera com nº de agentes
+  c.xp += state.agents.length*0.5 + 0.2;
+  if(c.xp>=100){c.xp=0;c.level++;
+    c.buff=Math.min(2.0,1+c.level*0.05);
+    log(`⚡ E (CORE) subiu para Lv.${c.level} — buff de estação x${c.buff.toFixed(2)}`,'e');
+  }
+  // emite ordem periodicamente
+  if(state.simSeconds%25===0 && state.agents.length){
+    c.orders++;
+    const cmds=[
+      'E: priorizar snipes virais na Sala 1.',
+      'E: redirecionar fluxo para a Sala 2 em breve.',
+      'E: manter silêncio. Deixar os escravos trabalhar.',
+      'E: auditar produtividade dos criadores.',
+      `E: ${state.agents.length} operativos alinhados ao objetivo $2B.`
+    ];
+    c.status=CORE_TASKS[rint(0,CORE_TASKS.length-1)];
+    log(cmds[rint(0,cmds.length-1)],'e');
+  }
+}
 function uid(){return Math.random().toString(36).slice(2,8);}
 function rint(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function makeAgent(n){return{id:uid(),name:n||NAMES[rint(0,NAMES.length-1)],level:1,xp:0,productivity:rint(40,90)/100,task:TASKS[rint(0,TASKS.length-1)],busy:rint(3,10),clips:0,px:0,py:0,tx:0,ty:0};}
@@ -225,7 +251,7 @@ function drawStation(){
   ctx.fillStyle=getCss('--green');
   for(let i=0;i<6;i++){const ang=Math.PI/3*i-Math.PI/6;const px=Math.cos(ang)*(CR+5),py=Math.sin(ang)*(CR+5);ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);ctx.fill();}
   // letra E
-  const eg=0.7+0.3*Math.sin(Date.now()/400);
+  const eg=state.running?(0.55+0.45*Math.abs(Math.sin(Date.now()/300))):0.4;
   ctx.fillStyle=`rgba(143,179,90,${eg})`;
   ctx.font='600 54px Teko, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText('E',0,2);
@@ -306,6 +332,19 @@ function renderHUD(){
   document.getElementById('goal-fill').style.width=p+'%';
   document.getElementById('goal-pct').textContent=(state.capital/GOAL*100).toFixed(6)+'%';
   document.getElementById('room-count').textContent='SALAS: '+(1+(state.unlocked.edit?1:0)+(state.unlocked.biz?1:0))+'/3';
+  // core (comandante E)
+  const c=state.core;
+  const cs=document.getElementById('sys-state');
+  if(cs) cs.textContent=
+    `COMANDANTE E (CORE)\n`+
+    `  Nível: ${c.level}  |  Ordens: ${c.orders}\n`+
+    `  Buff estação: x${c.buff.toFixed(2)}\n`+
+    `  Estado: ${c.status}\n`+
+    `Agentes: ${state.agents.length}\n`+
+    `Produtividade média: ${avgProd()}\n`+
+    `Clips forjados: ${state.agents.reduce((a,x)=>a+x.clips,0)}\n`+
+    `Salas ativas: ${1+(state.unlocked.edit?1:0)+(state.unlocked.biz?1:0)}/3\n`+
+    `Velocidade: ${state.speed}x`;
   if(!state.unlocked.edit&&state.capital>=10000){state.unlocked.edit=true;log('🔓 SALA DE EDIÇÃO desbloqueada!','e');}
   if(!state.unlocked.biz&&state.capital>=100000){state.unlocked.biz=true;log('🔓 SALA DE NEGÓCIOS ANGOLA desbloqueada!','e');}
 }
@@ -332,11 +371,12 @@ let timer=null;
 function tick(){
   if(!state.running)return;
   state.simSeconds+=state.speed;
+  coreTick();
   let cv2=0,cm=0;
   state.agents.forEach(a=>{
     if(a.busy>0){a.busy-=state.speed;
       if(a.busy<=0){a.clips++;a.xp+=10;
-        const views=rint(200,5000)*(1+a.level*0.3)*a.productivity;
+        const views=rint(200,5000)*(1+a.level*0.3)*a.productivity*state.core.buff;
         const money=views*0.05;
         cv2+=views;cm+=money;state.views+=views;state.capital+=money;
         if(a.xp>=100){a.xp=0;a.level++;a.productivity=Math.min(0.99,a.productivity+0.03);log(`${a.name} subiu para Lv.${a.level}!`,'e');}
@@ -356,7 +396,8 @@ function pause(){state.running=false;document.getElementById('btn-start').disabl
   log('❚❚ Estação pausada.','');if(timer)clearTimeout(timer);}
 function recruit(n){n=n||1;for(let i=0;i<n;i++){const a=makeAgent();a.busy=rint(3,10);state.agents.push(a);}
   log(`+${n} criador(es) recrutado(s).`,'e');renderAgents();renderHUD();}
-function reset(){pause();state={running:false,speed:parseInt(document.getElementById('speed').value),simSeconds:0,capital:0,views:0,rate:0,agents:[],unlocked:{edit:false,biz:false}};lastMile=-1;document.getElementById('log').innerHTML='';document.getElementById('agent-list').innerHTML='';renderHUD();log('↺ Estação reiniciada.','');}
+function reset(){pause();state={running:false,speed:parseInt(document.getElementById('speed').value),simSeconds:0,capital:0,views:0,rate:0,agents:[],unlocked:{edit:false,biz:false},
+  core:{level:1,xp:0,orders:0,buff:1.0,status:'A aguardar ordens'}};lastMile=-1;document.getElementById('log').innerHTML='';document.getElementById('agent-list').innerHTML='';renderHUD();log('↺ Estação reiniciada.','');}
 
 document.getElementById('btn-start').addEventListener('click',start);
 document.getElementById('btn-pause').addEventListener('click',pause);
