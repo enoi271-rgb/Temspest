@@ -82,6 +82,11 @@
   .cut-row{font-size:9px;color:var(--ink-soft);padding:3px 0;border-bottom:1px solid rgba(143,179,90,0.12);}
   .cut-row button{background:#4d5f37;color:#eef4e2;border:1px solid #8fb35a;font-size:8px;padding:2px 6px;border-radius:3px;cursor:pointer;margin-left:4px;}
   .notif{font-size:9px;color:var(--amber);margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .notif.prod{display:block;background:rgba(143,179,90,0.06);border:1px solid rgba(143,179,90,0.25);border-radius:4px;padding:8px;margin-top:6px;}
+  .prod-head{font-size:11px;color:var(--green);font-weight:600;margin-bottom:3px;}
+  .prod-meta{font-size:9px;color:var(--ink-faint);margin-bottom:4px;}
+  .prod-cap{font-size:10px;color:var(--ink-soft);line-height:1.4;margin-bottom:6px;}
+  .prod-actions{display:flex;gap:8px;}
   .btn-app,.btn-rej{font-family:'Teko',sans-serif;font-size:12px;padding:2px 8px;border-radius:2px;cursor:pointer;border:1px solid;}
   .btn-app{background:var(--green-dim);border-color:var(--green);color:#eef4e2;}
   .btn-rej{background:transparent;border-color:var(--red);color:var(--red);}
@@ -247,6 +252,7 @@ function freshState(){
     flow:[],
     pending:[],
     plans:[],
+    published:[],
     hermes:{ callsign:'HERMES', level:1, xp:0, productivity:1.0, working:false, orders:0 },
     core:{ level:1, xp:0, orders:0, buff:1.0, status:'A aguardar ordens' }
   };
@@ -609,24 +615,41 @@ function uploadClip(){
   };
 }
 function approve(id){
-  const a=state.rooms.flatMap(r=>r.agents).find(x=>x.id===id); if(!a)return;
-  a.state='work'; a.busy=rint(3,10); a.task=randTask(state.rooms.find(r=>r.id===a.roomId),a.role);
+  const a=state.rooms.flatMap(r=>r.agents).find(x=>x.id===id);
+  const pub=state.pending.find(p=>p.id===id);
+  if(pub&&pub.kind==='clip'){
+    state.published=state.published||[]; state.published.unshift(pub);
+    log('PUBLICADO: '+pub.title+' em '+pub.where+' — '+pub.caption.slice(0,40)+'...','e');
+  } else if(a){
+    a.state='work'; a.busy=rint(3,10); a.task=randTask(state.rooms.find(r=>r.id===a.roomId),a.role);
+    log(a.callsign+' aprovado por ti — volta ao trabalho.','e');
+  }
   state.pending=state.pending.filter(p=>p.id!==id);
-  log(a.callsign+' aprovado por ti — volta ao trabalho.','e');
   renderRooms();renderPending();renderHUD();
 }
 function reject(id){
-  const a=state.rooms.flatMap(r=>r.agents).find(x=>x.id===id); if(!a)return;
-  a.state='await'; a.busy=0;
+  const a=state.rooms.flatMap(r=>r.agents).find(x=>x.id===id);
+  const pub=state.pending.find(p=>p.id===id);
+  if(pub&&pub.kind==='clip'){ log('Publicacao rejeitada: '+pub.title,'e'); }
+  else if(a){ a.state='await'; a.busy=0; log(a.callsign+' rejeitado — refaz a tarefa.','e'); }
   state.pending=state.pending.filter(p=>p.id!==id);
-  log(a.callsign+' rejeitado — refaz a tarefa.','e');
   renderRooms();renderPending();renderHUD();
 }
 function renderPending(){
   const box=document.getElementById('pending');
   if(!state.pending.length){box.innerHTML='<div style="font-size:10px;color:var(--ink-faint)">Sem notificacoes. Os agentes trabalham e param para validacao.</div>';document.getElementById('pending-box').classList.add('ok');return;}
   document.getElementById('pending-box').classList.remove('ok');
-  box.innerHTML=state.pending.map(p=>'<div class="notif">OK <b>'+p.name+'</b> ('+p.room+'/'+p.role+') terminou '+p.kind+' — '+p.result+(p.kind==='clip'?' views':' $')+'<br><button class="btn-app" data-id="'+p.id+'">Validar</button><button class="btn-rej" data-id="'+p.id+'">Rejeitar</button></div>').join('');
+  box.innerHTML=state.pending.map(p=>{
+    if(p.kind==='clip'){
+      return '<div class="notif prod">'
+        +'<div class="prod-head">VERSAO FINAL — '+p.title+'</div>'
+        +'<div class="prod-meta">'+p.where+' · ~'+fmtClock(p.at||0)+' · '+p.result+' views est.</div>'
+        +'<div class="prod-cap">'+p.caption+'</div>'
+        +'<div class="prod-actions"><button class="btn-app" data-id="'+p.id+'">Publicar versao final</button><button class="btn-rej" data-id="'+p.id+'">Rejeitar</button></div>'
+        +'</div>';
+    }
+    return '<div class="notif">OK <b>'+p.name+'</b> ('+p.room+'/'+p.role+') terminou '+p.kind+' — '+p.result+(p.kind==='plano'?' doc':' $')+'<br><button class="btn-app" data-id="'+p.id+'">Validar</button><button class="btn-rej" data-id="'+p.id+'">Rejeitar</button></div>';
+  }).join('');
   box.querySelectorAll('.btn-app').forEach(b=>b.addEventListener('click',()=>approve(b.dataset.id)));
   box.querySelectorAll('.btn-rej').forEach(b=>b.addEventListener('click',()=>reject(b.dataset.id)));
 }
