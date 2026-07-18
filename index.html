@@ -440,7 +440,7 @@ function drawStation(){
     ctx.fillStyle=a.busy>0?'rgba(143,179,90,0.9)':'rgba(90,99,85,0.8)';ctx.fill();
     ctx.strokeStyle='#0a0c08';ctx.lineWidth=2;ctx.stroke();
     ctx.fillStyle='#0a0c08';ctx.font='600 12px Teko, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(a.name[0],a.px,a.py);
+    ctx.fillText(a.callsign[0],a.px,a.py);
     ctx.textAlign='left';ctx.textBaseline='alphabetic';
     ctx.fillStyle=getCss('--ink-dim');ctx.font='9px "IBM Plex Mono"';
     ctx.fillText(`${a.callsign} ${a.role} L${a.level}`,a.px+r+4,a.py-2);
