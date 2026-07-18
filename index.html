@@ -198,9 +198,47 @@ function drawStation(){
   for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
 
-  // corridor to the right (future rooms)
-  ctx.strokeStyle='rgba(143,179,90,0.25)';ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(ROOM.x+ROOM.w,ROOM.y+ROOM.h/2);ctx.lineTo(W-30,ROOM.y+ROOM.h/2);ctx.stroke();
+  // ===== CENTRAL MOTHERBOARD (nó "E") =====
+  const CX=ROOM.x+ROOM.w+70, CY=ROOM.y+ROOM.h/2, CR=46;
+  // circuit traces saindo da central
+  ctx.strokeStyle=getCss('--green');ctx.lineWidth=2;
+  const tracePulse=0.4+0.4*Math.abs(Math.sin(Date.now()/500));
+  ctx.globalAlpha=tracePulse;
+  // trace -> Sala 1 (esquerda)
+  ctx.beginPath();ctx.moveTo(CX-CR, CY);ctx.lineTo(ROOM.x+ROOM.w, CY);ctx.stroke();
+  // trace -> Sala 2 (cima-direita)
+  ctx.beginPath();ctx.moveTo(CX+CR*0.7, CY-CR*0.7);ctx.lineTo(r2.x, r2.y+r2.h);ctx.stroke();
+  // trace -> Sala 3 (baixo-direita)
+  ctx.beginPath();ctx.moveTo(CX+CR*0.7, CY+CR*0.7);ctx.lineTo(r3.x, r3.y);ctx.stroke();
+  ctx.globalAlpha=1;
+  // placa (hexágono estilo motherboard)
+  ctx.save();
+  ctx.translate(CX,CY);
+  ctx.beginPath();
+  for(let i=0;i<6;i++){const ang=Math.PI/3*i-Math.PI/6;const px=Math.cos(ang)*CR,py=Math.sin(ang)*CR;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+  ctx.closePath();
+  const cg=ctx.createRadialGradient(0,0,4,0,0,CR);
+  cg.addColorStop(0,'rgba(143,179,90,0.35)');cg.addColorStop(1,'rgba(77,95,55,0.06)');
+  ctx.fillStyle=cg;ctx.fill();
+  ctx.strokeStyle=getCss('--green');ctx.lineWidth=2.5;ctx.stroke();
+  // pinos do circuito
+  ctx.fillStyle=getCss('--green');
+  for(let i=0;i<6;i++){const ang=Math.PI/3*i-Math.PI/6;const px=Math.cos(ang)*(CR+5),py=Math.sin(ang)*(CR+5);ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);ctx.fill();}
+  // letra E
+  const eg=0.7+0.3*Math.sin(Date.now()/400);
+  ctx.fillStyle=`rgba(143,179,90,${eg})`;
+  ctx.font='600 54px Teko, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('E',0,2);
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.restore();
+  ctx.fillStyle=getCss('--green');ctx.font='10px "IBM Plex Mono"';
+  ctx.textAlign='center';
+  ctx.fillText('CENTRAL // MOTHERBOARD',CX,CY+CR+16);
+  ctx.textAlign='left';
+
+  // corridor to the right (future rooms) — keep faint behind traces
+  ctx.strokeStyle='rgba(143,179,90,0.12)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(CX+CR,CY);ctx.lineTo(W-30,CY);ctx.stroke();
   // locked room outlines
   ctx.setLineDash([6,6]);
   ctx.strokeStyle='rgba(90,99,85,0.5)';
