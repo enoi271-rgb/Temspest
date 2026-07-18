@@ -623,7 +623,7 @@ state.rooms.find(r=>r.id==='r2')._planT=0;
 // arranca automaticamente
 
 // ponte WhatsApp: poll decisions do servidor (se online)
-setInterval(()=>{ fetch('/api/decisions').then(r=>r.json()).then(arr=>{ (arr||[]).forEach(d=>{ if(d.action==='approve') approve(d.id); else if(d.action==='reject') reject(d.id); }); }).catch(()=>{}); }, 2500);: os agentes comecam a trabalhar ao abrir (sem clicar Ativar)
+setInterval(()=>{ fetch('/api/decisions').then(r=>r.json()).then(arr=>{ (arr||[]).forEach(d=>{ if(d.action==='approve') approve(d.id); else if(d.action==='reject') reject(d.id); }); }).catch(()=>{}); }, 2500); // os agentes comecam a trabalhar ao abrir (sem clicar Ativar)
 start();
 </script>
 </body>
