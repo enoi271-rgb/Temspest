@@ -3,6 +3,7 @@ clips/*.mp4
 clips/*.mov
 clips/*.webm
 clips/*.mkv
+clips/*.jpg
 *.mp4
 *.mov
 .DS_Store
@@ -22,3 +23,5 @@ queue.json
 .env
 # Base de dados financeira local (resultados reais)
 finance.db
+# Ficheiros de plano de negocio (gerados localmente, pesados em binarios)
+negocios/

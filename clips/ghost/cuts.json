@@ -1,0 +1,49 @@
+{
+  "name": "ghost",
+  "src": "/Users/enoimiguel/Downloads/ghost_youtube_full_edit.mp4",
+  "duration": 689.598515,
+  "cuts": [
+    {
+      "short": "clips/ghost/short_01.mp4",
+      "reel": "clips/ghost/reel_01.mp4",
+      "clutch": "clips/ghost/clutch_01.mp4",
+      "thumb": "clips/ghost/thumb_01.jpg",
+      "at": 57.5
+    },
+    {
+      "short": "clips/ghost/short_02.mp4",
+      "reel": "clips/ghost/reel_02.mp4",
+      "clutch": "clips/ghost/clutch_02.mp4",
+      "thumb": "clips/ghost/thumb_02.jpg",
+      "at": 172.4
+    },
+    {
+      "short": "clips/ghost/short_03.mp4",
+      "reel": "clips/ghost/reel_03.mp4",
+      "clutch": "clips/ghost/clutch_03.mp4",
+      "thumb": "clips/ghost/thumb_03.jpg",
+      "at": 287.3
+    },
+    {
+      "short": "clips/ghost/short_04.mp4",
+      "reel": "clips/ghost/reel_04.mp4",
+      "clutch": "clips/ghost/clutch_04.mp4",
+      "thumb": "clips/ghost/thumb_04.jpg",
+      "at": 402.3
+    },
+    {
+      "short": "clips/ghost/short_05.mp4",
+      "reel": "clips/ghost/reel_05.mp4",
+      "clutch": "clips/ghost/clutch_05.mp4",
+      "thumb": "clips/ghost/thumb_05.jpg",
+      "at": 517.2
+    },
+    {
+      "short": "clips/ghost/short_06.mp4",
+      "reel": "clips/ghost/reel_06.mp4",
+      "clutch": "clips/ghost/clutch_06.mp4",
+      "thumb": "clips/ghost/thumb_06.jpg",
+      "at": 632.1
+    }
+  ]
+}

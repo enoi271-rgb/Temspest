@@ -173,6 +173,8 @@
   <div class="panel">
     <div class="panel-head"><span class="panel-num">DOC</span><span class="display panel-title">Planos de Negocio</span></div>
     <div id="plans"><div style="font-size:10px;color:var(--ink-faint)">A sala de Negocios gera documentos para aprovacao.</div></div>
+    <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;border-top:1px solid #2a2f24;padding-top:6px;">Ficheiros completos em <b>negocios/</b> (resumo, mercado, produto, receita, KPIs, roadmap, riscos, pitch):<br>
+      <span style="color:var(--amber)">00_resumo_executivo.md · 01_analise_mercado.md · 02_produto_servico.md · 03_modelo_receita.csv · 04_kpis.json · 05_roadmap.md · 06_riscos.txt · 07_apresentacao.md</span></div>
   </div>
   <div class="panel">
     <div class="panel-head"><span class="panel-num">€</span><span class="display panel-title">Resultados Reais</span></div>
@@ -472,6 +474,79 @@ const SALA_POS=[
   {x:cv.width-400, y:cv.height-190, w:360, h:150} // S3 baixo-direita
 ];
 function roomRect(i){return SALA_POS[i];}
+// ===== DESENHO ESPECIFICO POR SALA =====
+function drawAgenteEmEstacao(a,bx,by,bw,bh,col){
+  a.anim+=0.02; const sitPhase=Math.sin(a.anim+(a.busy>0?0:1));
+  const standing=sitPhase>0;
+  const cx=bx+12, baseY=by+bh-6;
+  const headY=standing?baseY-26:baseY-16, torsoTop=standing?baseY-18:baseY-10;
+  ctx.strokeStyle=a.busy>0?col:'rgba(154,156,140,0.7)';ctx.lineWidth=2;
+  ctx.strokeRect(cx-5,baseY-8,10,8); // cadeira
+  ctx.beginPath();ctx.moveTo(cx,torsoTop);ctx.lineTo(cx,baseY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,torsoTop);ctx.lineTo(cx,standing?baseY-18:baseY-10);ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,headY,3,0,Math.PI*2);ctx.fillStyle=ctx.strokeStyle;ctx.fill();
+  ctx.fillStyle='rgba(154,156,140,0.6)';ctx.font='7px "IBM Plex Mono"';ctx.fillText(standing?'LEVANTA':'SENTA',cx-6,by+5);
+  ctx.fillStyle=col;ctx.font='8px "IBM Plex Mono"';ctx.fillText((a.callsign+' '+a.role).slice(0,16),bx+24,by+13);
+  ctx.fillStyle=a.busy>0?'rgba(217,154,62,0.95)':'rgba(154,156,140,0.6)';ctx.font='7px "IBM Plex Mono"';ctx.fillText((a.busy>0?a.task:'idle').slice(0,18),bx+24,by+24);
+  ctx.fillStyle='rgba(154,156,140,0.7)';ctx.font='7px "IBM Plex Mono"';ctx.fillText('Lv'+a.level,bx+24,by+34);
+  ctx.fillStyle='rgba(30,36,24,0.9)';ctx.fillRect(bx+5,by+bh-9,bw-10,2);
+  ctx.fillStyle=col;ctx.fillRect(bx+5,by+bh-9,(bw-10)*(a.xp/100),2);
+  ctx.fillStyle='rgba(30,36,24,0.9)';ctx.fillRect(bx+5,by+bh-6,bw-10,2);
+  const mc=a.morale>0.6?'rgba(143,179,90,0.9)':a.morale>0.35?'rgba(217,154,62,0.9)':'rgba(192,74,52,0.9)';
+  ctx.fillStyle=mc;ctx.fillRect(bx+5,by+bh-6,(bw-10)*a.morale,2);
+}
+function drawSalaCriacaoFuturista(s,col,room){
+  // PORTA de entrada/saida (esquerda) + acesso a sala E (ponte ja existe)
+  const doorX=s.x-2, doorY=s.y+s.h/2-18;
+  ctx.strokeStyle='rgba(143,179,90,0.6)';ctx.lineWidth=3;ctx.strokeRect(doorX,doorY,6,36);
+  ctx.fillStyle='rgba(143,179,90,0.15)';ctx.fillRect(doorX-4,doorY,10,36);
+  ctx.fillStyle='rgba(143,179,90,0.7)';ctx.font='7px "IBM Plex Mono"';ctx.fillText('PORTA',doorX-6,doorY-3);
+  // 4 ESTACOES de servico em grelha 2x2
+  const ex=s.x+18, ey=s.y+58, ew=(s.w-34)/2, eh=(s.h-72)/2;
+  for(let st=0;st<4;st++){
+    const gx=ex+(st%2)*ew, gy=ey+Math.floor(st/2)*eh;
+    ctx.strokeStyle='rgba(143,179,90,0.25)';ctx.lineWidth=1;ctx.strokeRect(gx+2,gy+2,ew-4,eh-4);
+    ctx.fillStyle='rgba(143,179,90,0.5)';ctx.font='7px "IBM Plex Mono"';ctx.fillText('ESTACAO '+(st+1),gx+6,gy+12);
+    const a=room.agents[st];
+    if(a){ drawAgenteEmEstacao(a,gx+4,gy+14,ew-8,eh-20,col); }
+    else { ctx.fillStyle='rgba(95,99,85,0.6)';ctx.font='8px "IBM Plex Mono"';ctx.fillText('livre',gx+8,gy+eh/2); }
+  }
+}
+function drawSalaReuniao(s,col,room){
+  // MESA REDONDA ao centro
+  const cx=s.x+s.w/2, cy=s.y+s.h/2+6, r=Math.min(s.w,s.h)*0.22;
+  ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='rgba(217,154,62,0.05)';ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  // QUADROS a volta
+  const boards=[['OBJETIVO 2B',s.x+6,s.y+50],['FUNIL',s.x+s.w-92,s.y+50],['KPIs',s.x+6,s.y+s.h-30],['ROADMAP',s.x+s.w-92,s.y+s.h-30]];
+  boards.forEach(b=>{ ctx.strokeStyle='rgba(217,154,62,0.4)';ctx.lineWidth=1;ctx.strokeRect(b[1],b[2],84,22);
+    ctx.fillStyle='rgba(217,154,62,0.7)';ctx.font='8px "IBM Plex Mono"';ctx.fillText(b[0],b[1]+4,b[2]+14); });
+  // agentes em volta da mesa
+  const n=room.agents.length||1;
+  room.agents.forEach((a,k)=>{
+    const ang=Math.PI*2*k/n - Math.PI/2;
+    const px=cx+Math.cos(ang)*(r+16), py=cy+Math.sin(ang)*(r+16);
+    ctx.fillStyle=a.busy>0?col:'rgba(154,156,140,0.7)';
+    ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=col;ctx.font='7px "IBM Plex Mono"';ctx.fillText(a.callsign,px-10,py-7);
+    // barra morale
+    ctx.fillStyle='rgba(30,36,24,0.9)';ctx.fillRect(px-8,py+7,16,2);
+    ctx.fillStyle=a.morale>0.6?'rgba(143,179,90,0.9)':'rgba(217,154,62,0.9)';ctx.fillRect(px-8,py+7,16*a.morale,2);
+  });
+  if(!room.agents.length){ctx.fillStyle='rgba(95,99,85,0.7)';ctx.font='10px "IBM Plex Mono"';ctx.fillText('vazia',s.x+10,s.y+70);}
+}
+function drawSalaGenerica(s,col,room){
+  const cols=2;
+  room.agents.forEach((a,j)=>{
+    const bx=s.x+14+(j%cols)*((s.w-28)/cols);
+    const by=s.y+58+Math.floor(j/cols)*50;
+    const bw=(s.w-28)/cols-8, bh=44;
+    ctx.fillStyle='rgba(14,17,11,0.9)';ctx.fillRect(bx,by,bw,bh);
+    ctx.strokeStyle=a.busy>0?col:'rgba(90,99,85,0.7)';ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,bh);
+    drawAgenteEmEstacao(a,bx+2,by+2,bw-4,bh-4,col);
+  });
+  if(!room.agents.length){ctx.fillStyle='rgba(95,99,85,0.7)';ctx.font='10px "IBM Plex Mono"';ctx.fillText('vazia',s.x+10,s.y+70);}
+}
 function drawStation(){
   const W=cv.width,H=cv.height;
   ctx.fillStyle='#070906';ctx.fillRect(0,0,W,H);
@@ -501,45 +576,9 @@ function drawStation(){
     ctx.fillText(room.num+' '+room.name,s.x+10,s.y+24);
     ctx.fillStyle='rgba(154,156,140,0.8)';ctx.font='9px "IBM Plex Mono"';
     ctx.fillText(room.func,s.x+10,s.y+38);
-    room.agents.forEach((a,j)=>{
-      const cols=2; const bx=s.x+14+(j%cols)*((s.w-28)/cols);
-      const by=s.y+64+Math.floor(j/cols)*52;
-      const bw=(s.w-28)/cols-8, bh=46;
-      ctx.fillStyle='rgba(14,17,11,0.9)';ctx.fillRect(bx,by,bw,bh);
-      ctx.strokeStyle=a.busy>0?col:'rgba(90,99,85,0.7)';ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,bh);
-      // ESTACAO DE SERVICO: cadeira + agente que levanta/senta (movimento p/ morale)
-      a.anim+=0.02; const sitPhase=Math.sin(a.anim+ (a.busy>0?0:1)); 
-      const standing = sitPhase>0;            // alterna sentar/levantar
-      const cx=bx+12, baseY=by+40;            // base da figura
-      const headY = standing? baseY-26 : baseY-16;
-      const torsoTop = standing? baseY-18 : baseY-10;
-      ctx.strokeStyle=a.busy>0?col:'rgba(154,156,140,0.7)';ctx.lineWidth=2;
-      // cadeira
-      ctx.strokeRect(cx-5,baseY-8,10,8);
-      // pernas
-      ctx.beginPath();ctx.moveTo(cx,torsoTop);ctx.lineTo(cx,baseY);ctx.stroke();
-      // torso
-      ctx.beginPath();ctx.moveTo(cx,torsoTop);ctx.lineTo(cx, standing?baseY-18:baseY-10);ctx.stroke();
-      // cabeca
-      ctx.beginPath();ctx.arc(cx,headY,3,0,Math.PI*2);ctx.fillStyle=ctx.strokeStyle;ctx.fill();
-      // estado: sentado/levantado
-      ctx.fillStyle='rgba(154,156,140,0.6)';ctx.font='7px "IBM Plex Mono"';
-      ctx.fillText(standing?'LEVANTA':'SENTA',cx-6,by+6);
-      // texto do agente
-      ctx.fillStyle=col;ctx.font='8px "IBM Plex Mono"';
-      ctx.fillText((a.callsign+' '+a.role).slice(0,18),bx+26,by+13);
-      ctx.fillStyle=a.busy>0?'rgba(217,154,62,0.95)':'rgba(154,156,140,0.6)';ctx.font='7px "IBM Plex Mono"';
-      ctx.fillText((a.busy>0?a.task:'idle').slice(0,20),bx+26,by+25);
-      ctx.fillStyle='rgba(154,156,140,0.7)';ctx.font='7px "IBM Plex Mono"';ctx.fillText('Lv'+a.level,bx+26,by+36);
-      // barras XP + MORALE
-      ctx.fillStyle='rgba(30,36,24,0.9)';ctx.fillRect(bx+5,by+41,bw-10,2);
-      ctx.fillStyle=col;ctx.fillRect(bx+5,by+41,(bw-10)*(a.xp/100),2);
-      ctx.fillStyle='rgba(30,36,24,0.9)';ctx.fillRect(bx+5,by+44,bw-10,2);
-      const mc = a.morale>0.6?'rgba(143,179,90,0.9)':a.morale>0.35?'rgba(217,154,62,0.9)':'rgba(192,74,52,0.9)';
-      ctx.fillStyle=mc;ctx.fillRect(bx+5,by+44,(bw-10)*a.morale,2);
-    });
-    if(!room.agents.length){ctx.fillStyle='rgba(95,99,85,0.7)';ctx.font='10px "IBM Plex Mono"';
-      ctx.fillText('vazia',s.x+10,s.y+70);}
+    if(i===0){ drawSalaCriacaoFuturista(s,col,room); }
+    else if(i===1){ drawSalaReuniao(s,col,room); }
+    else { drawSalaGenerica(s,col,room); }
   });
 
   // FLUXO (pacotes a circular S1->E->S2->E->S3)

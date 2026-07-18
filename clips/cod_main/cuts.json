@@ -1,0 +1,91 @@
+{
+  "name": "cod_main",
+  "src": "/Users/enoimiguel/Downloads/Call of Duty_20260704134134.mp4",
+  "duration": 2427.948118,
+  "cuts": [
+    {
+      "short": "clips/cod_main/short_01.mp4",
+      "reel": "clips/cod_main/reel_01.mp4",
+      "clutch": "clips/cod_main/clutch_01.mp4",
+      "thumb": "clips/cod_main/thumb_01.jpg",
+      "at": 101.2
+    },
+    {
+      "short": "clips/cod_main/short_02.mp4",
+      "reel": "clips/cod_main/reel_02.mp4",
+      "clutch": "clips/cod_main/clutch_02.mp4",
+      "thumb": "clips/cod_main/thumb_02.jpg",
+      "at": 303.5
+    },
+    {
+      "short": "clips/cod_main/short_03.mp4",
+      "reel": "clips/cod_main/reel_03.mp4",
+      "clutch": "clips/cod_main/clutch_03.mp4",
+      "thumb": "clips/cod_main/thumb_03.jpg",
+      "at": 505.8
+    },
+    {
+      "short": "clips/cod_main/short_04.mp4",
+      "reel": "clips/cod_main/reel_04.mp4",
+      "clutch": "clips/cod_main/clutch_04.mp4",
+      "thumb": "clips/cod_main/thumb_04.jpg",
+      "at": 708.2
+    },
+    {
+      "short": "clips/cod_main/short_05.mp4",
+      "reel": "clips/cod_main/reel_05.mp4",
+      "clutch": "clips/cod_main/clutch_05.mp4",
+      "thumb": "clips/cod_main/thumb_05.jpg",
+      "at": 910.5
+    },
+    {
+      "short": "clips/cod_main/short_06.mp4",
+      "reel": "clips/cod_main/reel_06.mp4",
+      "clutch": "clips/cod_main/clutch_06.mp4",
+      "thumb": "clips/cod_main/thumb_06.jpg",
+      "at": 1112.8
+    },
+    {
+      "short": "clips/cod_main/short_07.mp4",
+      "reel": "clips/cod_main/reel_07.mp4",
+      "clutch": "clips/cod_main/clutch_07.mp4",
+      "thumb": "clips/cod_main/thumb_07.jpg",
+      "at": 1315.1
+    },
+    {
+      "short": "clips/cod_main/short_08.mp4",
+      "reel": "clips/cod_main/reel_08.mp4",
+      "clutch": "clips/cod_main/clutch_08.mp4",
+      "thumb": "clips/cod_main/thumb_08.jpg",
+      "at": 1517.5
+    },
+    {
+      "short": "clips/cod_main/short_09.mp4",
+      "reel": "clips/cod_main/reel_09.mp4",
+      "clutch": "clips/cod_main/clutch_09.mp4",
+      "thumb": "clips/cod_main/thumb_09.jpg",
+      "at": 1719.8
+    },
+    {
+      "short": "clips/cod_main/short_10.mp4",
+      "reel": "clips/cod_main/reel_10.mp4",
+      "clutch": "clips/cod_main/clutch_10.mp4",
+      "thumb": "clips/cod_main/thumb_10.jpg",
+      "at": 1922.1
+    },
+    {
+      "short": "clips/cod_main/short_11.mp4",
+      "reel": "clips/cod_main/reel_11.mp4",
+      "clutch": "clips/cod_main/clutch_11.mp4",
+      "thumb": "clips/cod_main/thumb_11.jpg",
+      "at": 2124.5
+    },
+    {
+      "short": "clips/cod_main/short_12.mp4",
+      "reel": "clips/cod_main/reel_12.mp4",
+      "clutch": "clips/cod_main/clutch_12.mp4",
+      "thumb": "clips/cod_main/thumb_12.jpg",
+      "at": 2326.8
+    }
+  ]
+}
