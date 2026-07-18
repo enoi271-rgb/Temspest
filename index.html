@@ -82,6 +82,21 @@
   .log .e{color:var(--amber);}
 
   .locked{font-size:12px;color:var(--ink-faint);padding:10px 0;}
+  .plan-card{border:1px solid var(--line);background:var(--bg-2);padding:10px 12px;margin-bottom:10px;}
+  .plan-top{display:flex;justify-content:space-between;align-items:baseline;}
+  .plan-name{font-family:'Teko',sans-serif;font-size:18px;color:var(--amber);}
+  .plan-sector{font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.1em;}
+  .plan-status{font-size:10px;padding:1px 7px;border:1px solid var(--green-dim);color:var(--green);}
+  .plan-status.auto{color:#0a0c08;background:var(--green);border-color:var(--green);}
+  .plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0;font-size:10.5px;color:var(--ink-dim);}
+  .plan-grid b{color:var(--ink);font-weight:500;}
+  .plan-bar{height:6px;background:#0e110b;border:1px solid var(--line);}
+  .plan-bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--green-dim),var(--green));}
+  .master-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;}
+  .master-cell{border:1px solid var(--line-strong);background:var(--bg-2);padding:8px;text-align:center;}
+  .master-val{font-family:'Teko',sans-serif;font-size:24px;color:var(--green);line-height:1;}
+  .master-lab{font-size:9px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.1em;}
+  .file-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;}
   .note{font-size:10.5px;color:var(--ink-faint);border-top:1px solid var(--line);margin-top:12px;padding-top:8px;}
   .milestone-pop{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--bg-1);border:1px solid var(--amber);
     color:var(--amber);padding:12px 22px;font-family:'Teko',sans-serif;font-size:22px;letter-spacing:0.05em;z-index:100;opacity:0;transition:opacity .4s;box-shadow:0 0 20px rgba(217,154,62,0.3);}
@@ -144,12 +159,15 @@
         <div id="agent-list" style="margin-top:10px;"></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><span class="panel-num">R2</span><span class="display panel-title">Sala de Edição</span></div>
-        <div class="locked">🔒 Bloqueada. Conquista $10K para desbloquear.</div>
+        <div class="panel-head"><span class="panel-num">R2</span><span class="display panel-title">Sala de Negócios Angola</span></div>
+        <div class="room-sub" style="font-size:10px;color:var(--ink-faint);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Recebe ficheiros de negócio · dashboard por plano + gestão mestra</div>
+        <div id="biz-body">
+          <div class="locked">🔒 Bloqueada. Conquista $100K para desbloquear e ativar o Agente de Planos.</div>
+        </div>
       </div>
       <div class="panel">
-        <div class="panel-head"><span class="panel-num">R3</span><span class="display panel-title">Sala de Negócios Angola</span></div>
-        <div class="locked">🔒 Bloqueada. Conquista $100K para desbloquear.</div>
+        <div class="panel-head"><span class="panel-num">R3</span><span class="display panel-title">Sala de Edição</span></div>
+        <div class="locked">🔒 Bloqueada. Conquista $10K para desbloquear.</div>
       </div>
     </div>
     <div>
@@ -160,7 +178,7 @@
     </div>
   </div>
 
-  <div class="note">TEMSPEST STATION v0.2 — protótipo com vista de estação. Valores de jogo/aceleração; ajusta para realismos (views × RPM Angola) no código.</div>
+  <div class="note">TEMSPEST STATION v0.5 — Sala 2 (Negócios Angola): recebe ficheiros, dashboard por plano + gestão mestra. Valores de jogo/aceleração; ajusta para realismos no código.</div>
 </div>
 
 <script>
@@ -168,8 +186,52 @@ const GOAL=2_000_000_000;
 const NAMES=["Sombra","T-Troop","Vulto","Fantasma-X","Calado","Névoa","Kamba","Sniper-77","Zero","Cobra","Relâmpago","Quieto"];
 const TASKS=["A gravar snipe","A editar clutch","A subir short","A analyzar trends","A montar thumbnail","A estudar meta","A reagir a clip"];
 
-let state={running:false,speed:20,simSeconds:0,capital:0,views:0,rate:0,agents:[],unlocked:{edit:false,biz:false},
+let state={running:false,speed:20,simSeconds:0,capital:0,views:0,rate:0,agents:[],unlocked:{edit:false,biz:false},plans:[],
   core:{level:1,xp:0,orders:0,buff:1.0,status:'A aguardar ordens'}};
+
+// ===== PLANOS DE NEGÓCIO (Sala 2) =====
+const SECTORS=['Comércio','Tecnologia','Agricultura','Logística','Eventos','Educação','Imobiliário','Alimentação'];
+function makePlan(d){
+  d=d||{};
+  const invested=d.invested||rint(5,80)*1000;            // USD
+  const monthlyCost=d.monthlyCost||rint(5,40)*100;       // USD/mês
+  const monthlyRev=d.monthlyRev||monthlyCost+rint(2,60)*100;
+  const net=monthlyRev-monthlyCost;
+  const breakeven=net>0?Math.ceil(invested/net):999;
+  return {
+    id:uid(),
+    name:d.name||SECTORS[rint(0,SECTORS.length-1)]+' #'+rint(10,99),
+    sector:d.sector||SECTORS[rint(0,SECTORS.length-1)],
+    invested, monthlyCost, monthlyRev,
+    breakeven, risk:d.risk||rint(20,85),
+    accRev:0, progress:0, status:'ANALISANDO'
+  };
+}
+function planTick(){
+  if(!state.unlocked.biz) return;
+  state.plans.forEach(p=>{
+    const gain=p.monthlyRev*state.core.buff*0.02*state.speed;
+    p.accRev+=gain;
+    p.progress=Math.min(1,p.accRev/p.invested);
+    if(p.progress>=1 && p.status!=='AUTO-SUSTENTÁVEL'){
+      p.status='AUTO-SUSTENTÁVEL';
+      log(`📈 Plano "${p.name}" atingiu auto-sustentabilidade!`,'e');
+    } else if(p.status==='ANALISANDO' && p.progress>0.05){p.status='EM CURSO';}
+    // evento de risco
+    if(Math.random()<0.01*state.speed/20 && p.risk>50){
+      const loss=p.invested*0.02; p.accRev=Math.max(0,p.accRev-loss);
+      log(`⚠️ Risco em "${p.name}": perda de ${fmtMoney(loss)}.`,'d');
+    }
+  });
+}
+function planMaster(){
+  if(!state.plans.length) return {n:0,inv:0,rev:0,risk:0,auto:0};
+  const inv=state.plans.reduce((s,p)=>s+p.invested,0);
+  const rev=state.plans.reduce((s,p)=>s+p.accRev,0);
+  const risk=state.plans.reduce((s,p)=>s+p.risk,0)/state.plans.length;
+  const auto=state.plans.filter(p=>p.status==='AUTO-SUSTENTÁVEL').length;
+  return {n:state.plans.length,inv,rev,risk,auto};
+}
 
 // Comandante "E" — orquestrador da estação (estilo ULTRON)
 const CORE_TASKS=['A coordenar prioridades','A aprovar decisões','A alinhar agentes','A otimizar rotas','A auditar salas','A planeiar expansão'];
@@ -272,8 +334,8 @@ function drawStation(){
   ctx.strokeRect(r2.x,r2.y,r2.w,r2.h);ctx.strokeRect(r3.x,r3.y,r3.w,r3.h);
   ctx.setLineDash([]);
   ctx.fillStyle='rgba(154,156,140,0.7)';ctx.font='11px "IBM Plex Mono"';
-  ctx.fillText('🔒 SALA 2 — EDIÇÃO',r2.x+8,r2.y+22);
-  ctx.fillText('🔒 SALA 3 — NEGÓCIOS ANGOLA',r3.x+8,r3.y+22);
+  ctx.fillText('🔒 SALA 2 — NEGÓCIOS ANGOLA',r2.x+8,r2.y+22);
+  ctx.fillText('🔒 SALA 3 — EDIÇÃO',r3.x+8,r3.y+22);
 
   // ROOM 1
   const grd=ctx.createLinearGradient(ROOM.x,ROOM.y,ROOM.x,ROOM.y+ROOM.h);
@@ -345,8 +407,12 @@ function renderHUD(){
     `Clips forjados: ${state.agents.reduce((a,x)=>a+x.clips,0)}\n`+
     `Salas ativas: ${1+(state.unlocked.edit?1:0)+(state.unlocked.biz?1:0)}/3\n`+
     `Velocidade: ${state.speed}x`;
+  // unlock Sala 2 (Negócios) a $100K
+  if(!state.unlocked.biz&&state.capital>=100000){state.unlocked.biz=true;openBiz();
+    for(let i=0;i<3;i++)state.plans.push(makePlan());
+    log('🔓 SALA DE NEGÓCIOS ANGOLA desbloqueada!','e');}
+  // unlock Sala 3 (Edição) a $10K
   if(!state.unlocked.edit&&state.capital>=10000){state.unlocked.edit=true;log('🔓 SALA DE EDIÇÃO desbloqueada!','e');}
-  if(!state.unlocked.biz&&state.capital>=100000){state.unlocked.biz=true;log('🔓 SALA DE NEGÓCIOS ANGOLA desbloqueada!','e');}
 }
 function renderAgents(){
   const box=document.getElementById('agent-list');box.innerHTML='';
@@ -372,6 +438,7 @@ function tick(){
   if(!state.running)return;
   state.simSeconds+=state.speed;
   coreTick();
+  planTick();
   let cv2=0,cm=0;
   state.agents.forEach(a=>{
     if(a.busy>0){a.busy-=state.speed;
@@ -385,7 +452,7 @@ function tick(){
     } else {a.task=TASKS[rint(0,TASKS.length-1)];a.busy=rint(3,10);}
   });
   state.rate=cm;
-  if(state.simSeconds%10===0){renderHUD();renderAgents();}
+  if(state.simSeconds%10===0){renderHUD();renderAgents();renderBiz();}
   checkMilestones();
   timer=setTimeout(tick,1000);
 }
@@ -416,6 +483,67 @@ document.getElementById('clip-input').addEventListener('change',e=>{
   document.getElementById('clip-name').textContent=f.name+' ('+(f.size/1048576).toFixed(0)+'MB)';
   log('📺 Clip de teste carregado: '+f.name,'e');
 });
+
+// ===== SALA 2 — NEGÓCIOS ANGOLA =====
+function openBiz(){
+  const b=document.getElementById('biz-body');
+  b.innerHTML=`
+    <div class="file-row">
+      <button class="btn ghost" id="btn-new-plan" style="font-size:14px;padding:6px 12px;">+ Novo plano de negócio</button>
+      <button class="btn ghost" id="btn-load-biz" style="font-size:14px;padding:6px 12px;">📂 Carregar ficheiro de negócio</button>
+      <input type="file" id="biz-input" accept=".json,.md,.txt,.csv" style="display:none;">
+      <span id="biz-file" style="font-size:11px;color:var(--ink-faint);"></span>
+    </div>
+    <div class="master-grid" id="biz-master"></div>
+    <div id="biz-plans"></div>`;
+  document.getElementById('btn-new-plan').addEventListener('click',()=>{state.plans.push(makePlan());log('📊 Novo plano de negócio criado: '+state.plans[state.plans.length-1].name,'e');renderBiz();});
+  document.getElementById('btn-load-biz').addEventListener('click',()=>document.getElementById('biz-input').click());
+  document.getElementById('biz-input').addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{
+      let data={};
+      try{ if(f.name.endsWith('.json')) data=JSON.parse(r.result);
+           else { const m=r.result.match(/setor[: ]+([^\n]+)/i); if(m)data.sector=m[1].trim(); } }catch(_){}
+      const p=makePlan(data); state.plans.push(p);
+      document.getElementById('biz-file').textContent=f.name;
+      log('📂 Ficheiro de negócio carregado: '+f.name+' → plano "'+p.name+'"','e');
+      renderBiz();
+    };
+    r.readAsText(f);
+  });
+  renderBiz();
+}
+function renderBiz(){
+  if(!state.unlocked.biz)return;
+  const m=planMaster();
+  const mg=document.getElementById('biz-master');
+  if(mg) mg.innerHTML=`
+    <div class="master-cell"><div class="master-val">${m.n}</div><div class="master-lab">Planos</div></div>
+    <div class="master-cell"><div class="master-val">${fmtMoney(m.inv)}</div><div class="master-lab">Investido</div></div>
+    <div class="master-cell"><div class="master-val">${fmtMoney(m.rev)}</div><div class="master-lab">Receita acc.</div></div>
+    <div class="master-cell"><div class="master-val">${m.auto}/${m.n}</div><div class="master-lab">Auto-sust.</div></div>`;
+  const box=document.getElementById('biz-plans');
+  if(!box)return;
+  box.innerHTML='';
+  if(!state.plans.length){box.innerHTML='<div class="locked">Nenhum plano ainda. Cria ou carrega um ficheiro.</div>';return;}
+  state.plans.forEach(p=>{
+    const d=document.createElement('div');d.className='plan-card';
+    d.innerHTML=`
+      <div class="plan-top"><div><span class="plan-name">${p.name}</span> <span class="plan-sector">${p.sector}</span></div>
+        <span class="plan-status ${p.status==='AUTO-SUSTENTÁVEL'?'auto':''}">${p.status}</span></div>
+      <div class="plan-grid">
+        <div>Investido: <b>${fmtMoney(p.invested)}</b></div>
+        <div>Custo/mês: <b>${fmtMoney(p.monthlyCost)}</b></div>
+        <div>Rev/mês: <b>${fmtMoney(p.monthlyRev)}</b></div>
+        <div>Break-even: <b>${p.breakeven>=999?'∞':p.breakeven+'m'}</b></div>
+        <div>Risco: <b>${p.risk}%</b></div>
+        <div>Acc: <b>${fmtMoney(p.accRev)}</b></div>
+      </div>
+      <div class="plan-bar"><i style="width:${p.progress*100}%"></i></div>`;
+    box.appendChild(d);
+  });
+}
 
 // init
 renderHUD();log('TEMSPEST STATION v0.2 pronto. Clica em INICIAR.','');
