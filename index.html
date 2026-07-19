@@ -519,7 +519,7 @@ function tick(){
   updateFlow();
   if(state.simSeconds%10===0){syncCapitalReal();renderHUD();renderRooms();renderCore();renderMaster();}
   checkMilestones();
-  timer=setTimeout(tick,1000);
+  timer=setTimeout(tickSafe,1000);
 }
 
 // fluxo circular: S1->E->S2->E->S3
@@ -569,6 +569,8 @@ function renderRooms(){
       <div class="upload-box">
         <div class="ub-title">⏫ CARREGA UM VIDEO — a Sala de Criacao faz cortes + publicacoes</div>
         <input type="file" id="clip-input" accept="video/*" />
+        <button id="btn-hype" style="font-size:9px;padding:4px 10px;margin-top:4px;width:100%;background:#5a2a6a;color:#eef4e2;border:1px solid #b388ff;cursor:pointer;border-radius:3px;">⚡ Gerar HYPE de Kills (todos os clips)</button>
+        <div id="hype-msg" style="font-size:9px;color:var(--ink-faint);margin-top:3px;"></div>
         <video id="clip-prev" controls style="display:none;width:100%;max-height:120px;margin-top:6px;background:#000;border-radius:3px;"></video>
         <div id="clip-cuts"></div>
       </div>`:''}
@@ -597,7 +599,7 @@ function renderCore(){
     `Estado: ${c.status}\n`+
     `Qualidade global: x${state.qualityMult.toFixed(2)}\n`+
     `Salas: ${state.rooms.length}  |  Agentes: ${state.rooms.reduce((s,r)=>s+r.agents.length,0)}\n`+
-    `HERMES (sup): ${state.hermes.working?'ATIVO':'idle'} · ordens ${state.hermes.orders}`;
+    `HERMES (sup): ${state.running?'ATIVO':'idle'} · ordens ${state.hermes.orders}`;
 }
 function renderMaster(){
   const totalAgents=state.rooms.reduce((s,r)=>s+r.agents.length,0);
@@ -866,9 +868,13 @@ function start(){if(state.running)return;
   if(!state.rooms.some(r=>r.agents.length))state.rooms.forEach(r=>recruitRoom(r,2));
   state.running=true;
   document.getElementById('btn-start').disabled=true;document.getElementById('btn-pause').disabled=false;
+  // render imediato (nao espera 1s pelo 1o tick)
+  renderHUD();renderRooms();renderCore();renderMaster();renderEstacao();
   log('ECOSYSTEMA ativado. Todas as salas a trabalhar rumo aos $2B.','e');tick();}
 function pause(){state.running=false;document.getElementById('btn-start').disabled=false;document.getElementById('btn-pause').disabled=true;
   log('Estacao pausada.','');if(timer)clearTimeout(timer);}
+// tick com try/catch + RELANCA sempre (nao congela o ecossistema)
+function tickSafe(){ try{ tick(); }catch(e){ const msg=(e&&e.stack)?e.stack:(e&&e.message?e.message:String(e)); log('ERRO no tick: '+msg,'e'); console.error(e); } timer=setTimeout(tickSafe,1000); }
 function recruitRoom(room,n){n=n||1;for(let i=0;i<n;i++){const role=room.roles[rint(0,room.roles.length-1)];const a=makeAgent(room,role);a.busy=rint(3,10);room.agents.push(a);}}
 function recruit(){state.rooms.forEach(r=>recruitRoom(r,1));
   log('+1 agente por sala recrutado.','e');renderRooms();renderHUD();}
@@ -1156,17 +1162,32 @@ document.getElementById('btn-approve-all').addEventListener('click',()=>{
 const clipIn=document.getElementById('clip-in');
 clipIn.addEventListener('change',e=>{const f=e.target.files[0];if(f)document.getElementById('clip-r1').src=URL.createObjectURL(f);});
 
-// init — ecossistema pre-populado (salas visiveis logo a entrada) e a TRABALHAR
+// init — ecossistema pre-populado (salas visiveis logo a entrada) e A TRABALHAR
 state.rooms.forEach(r=>recruitRoom(r,2));
-renderHUD();renderRooms();renderCore();renderMaster();
-log('TEMSPEST STATION online. Agentes a trabalhar rumo aos $2B.','');
+renderHUD();renderRooms();renderCore();renderMaster();renderEstacao();renderPending();renderPlans();renderPub();renderWeb();renderCRM();renderLedger();
 drawStation();
-renderPending();renderPlans();renderEstacao();renderPub();renderWeb();renderCRM();renderLedger();
-state.rooms.find(r=>r.id==='r2')._planT=0;
+log('TEMSPEST STATION online. Agentes a trabalhar rumo aos $2B.','e');
+// ARRANCA AUTOMATICO (ecossistema ativo ao abrir — sem clicar)
+(function autoStart(){ if(state.running)return; state.running=true;
+  const bs=document.getElementById('btn-start'); if(bs)bs.disabled=true;
+  const bp=document.getElementById('btn-pause'); if(bp)bp.disabled=false;
+  tickSafe(); })();
 // arranca automaticamente
 
 // ponte WhatsApp: poll decisions do servidor (se online)
 setInterval(()=>{ fetch('/api/decisions').then(r=>r.json()).then(arr=>{ (arr||[]).forEach(d=>{ if(d.action==='approve') approve(d.id); else if(d.action==='reject') reject(d.id); }); }).catch(()=>{}); }, 2500); // os agentes comecam a trabalhar ao abrir (sem clicar Ativar)
+document.getElementById('btn-hype').addEventListener('click',()=>{
+  document.getElementById('hype-msg').textContent='A processar os kills...';
+  fetch('/api/video/hype',{method:'POST'}).then(r=>r.json()).then(j=>{
+    if(j.ok){
+      document.getElementById('hype-msg').innerHTML='⚡ <b style="color:var(--green)">'+j.gerados+'</b> cortes de hype gerados em <code>estacao/secretaria/sala_criacao/hype/</code> — aguardam tua aprovacao para publicar.';
+      log('HYPE: '+j.gerados+' cortes de kills gerados (shorts/reels). Ver sala_criacao/hype/','e');
+      renderEstacao();
+    } else {
+      document.getElementById('hype-msg').textContent='Erro: '+(j.reason||'');
+    }
+  }).catch(()=>{ document.getElementById('hype-msg').textContent='Backend indisponivel (servidor local?).'; });
+});
 const _ci=document.getElementById('clip-input'); if(_ci)_ci.addEventListener('change',uploadClip);
 document.querySelectorAll('.btn-folder').forEach(b=>{
   b.addEventListener('click',()=>{
@@ -1227,7 +1248,11 @@ document.getElementById('btn-info').addEventListener('click',()=>{
 });
 // agentes processam info pendente -> produzem resultados
 setInterval(()=>{ fetch('/api/info').then(r=>r.json()).then(arr=>{ const pend=arr.filter(x=>x.status==='pendente'); if(pend.length){ const i=pend[0]; log('Agentes a processar info: '+i.text.slice(0,40)+'...','e'); fetch('/api/result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:'CURATOR',room:'R1',kind:'analise',title:'Analise de info #'+i.id,value:0})}).catch(()=>{}); } }).catch(()=>{}); }, 6000);
-start();
+// ERRO GLOBAL -> mostra no painel de log (para diagnostico)
+window.onerror=function(msg,src,ln,col,err){ try{ log('ERRO JS: '+(err&&err.stack?err.stack:msg)+' @'+ln+':'+col,'e'); }catch(e){} return false; };
+// agentes comecam a trabalhar SOZINHOS ao abrir (sem clicar Ativar)
+window.addEventListener('DOMContentLoaded',()=>{ try{ start(); }catch(e){ log('ERRO start: '+(e&&e.stack?e.stack:e),'e'); } });
+if(document.readyState!=='loading'){ try{ start(); }catch(e){ log('ERRO start: '+(e&&e.stack?e.stack:e),'e'); } }
 </script>
 </body>
 </html>

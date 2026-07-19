@@ -1058,6 +1058,76 @@ def video_cut():
                     "msg": "Corte real gerado em estacao/secretaria/sala_criacao/"})
 
 
+# ---------- GERACAO DE HYPE VIDEOS (kills -> cortes virais) ----------
+HYPE_DIR = os.path.join(SALAS["sala_criacao"]["path"], "hype")
+import re as _re
+HYPE_TAGS = "#TTEMSPESTT #WarzoneAngola #GhostAngolano #GamingAngola #COD #Shorts #TikTokGaming #Clutch"
+def gen_hype_copy(clip_name, idx):
+    persona = ["VECTOR","FORCE","PULSE","QUANTUM","NOVA","ECHO","RAVEN"]
+    ag = persona[idx % len(persona)]
+    hooks = [
+        "NAO ACREDITA NESTE CLUTCH 🔥",
+        "O GHOST NAO PERDOA 💀",
+        "KILL STREAK DEIXA O INIMIGO ATRASADO 😤",
+        "ULTIMO STAND | VIRADA GHOST 🔥",
+        "SNIPE DE 1 TABUADA SO ANGOLA SABE 🎯",
+        "ELES NAO VIAM ESTE AKIMBO VIR 💀",
+    ]
+    hook = hooks[idx % len(hooks)]
+    caption = (hook + "\n" +
+               "Ghost Angolano (TTEMSPESTT) a dominar Warzone.\n" +
+               clip_name + " #" + str(idx+1) + "\n" +
+               HYPE_TAGS)
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    cf = os.path.join(HYPE_DIR, ts + "__hype_" + str(idx+1).zfill(2) + "__copy.md")
+    os.makedirs(HYPE_DIR, exist_ok=True)
+    with open(cf, "w", encoding="utf-8") as f:
+        f.write("# HYPE VIDEO #" + str(idx+1) + " — " + clip_name + "\n")
+        f.write("> Gerado pela Sala de Criacao (TTEMSPESTT)\n\n")
+        f.write("**HOOK:** " + hook + "\n\n")
+        f.write("**CAPTION:**\n" + caption + "\n\n")
+        f.write("**THUMBNAIL:** fundo escuro + 1 elemento da marca + texto curto (<=4 pal.).\n")
+        f.write("**FORMATO:** 1080x1920 (Reels/Shorts). CTA: 'Segue o Ghost'.\n\n")
+        f.write("---\n*Nao publicado automaticamente — aguarda tua aprovacao no painel.*\n")
+    return caption, cf
+    return caption, cf
+
+@app.route("/api/video/hype", methods=["POST"])
+def video_hype():
+    # processa CADA clip de kills em videos/clips/cod_main -> gera N cortes de hype
+    clips = sorted(_glob.glob(os.path.join(VIDEOS_CLIPS, "cod_main", "*.mp4")))
+    if not clips:
+        return jsonify({"ok": False, "reason": "sem clips de kills em videos/clips/cod_main"}), 400
+    os.makedirs(HYPE_DIR, exist_ok=True)
+    out = []
+    for i, src in enumerate(clips):
+        # 3 cortes de hype por clip (short/reel/clip) com duracoes variadas
+        for k, (kind, dur) in enumerate([("short", 12), ("reel", 18), ("clip", 25)]):
+            try:
+                ss = _random.randint(0, 20)
+                ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                out_name = f"{ts}__hype_{str(i+1).zfill(2)}_{kind}.mp4"
+                out_path = os.path.join(HYPE_DIR, out_name)
+                _sp.run(["ffmpeg", "-y", "-ss", str(ss), "-i", src, "-t", str(dur),
+                           "-c", "copy", "-movflags", "+faststart", out_path],
+                          stdout=_sp.DEVNULL, stderr=_sp.DEVNULL, timeout=60, check=True)
+                caption, cf = gen_hype_copy(os.path.basename(src), len(out))
+                out.append({"clip": os.path.basename(src), "file": out_name, "kind": kind, "dur": dur, "copy": os.path.basename(cf)})
+            except Exception as e:
+                out.append({"clip": os.path.basename(src), "kind": kind, "error": str(e)})
+    # regista no backend
+    try:
+        with _lock:
+            cx = db()
+            cx.execute("INSERT INTO results(agente,tipo,descricao,valor,ts) VALUES(?,?,?,?,?)",
+                       ("EDITOR", "video", f"HYPE: {len(out)} cortes de kills gerados", 0, datetime.datetime.now().strftime("%Y%m%d_%H%M%S")))
+            cx.commit(); cx.close()
+    except Exception:
+        pass
+    return jsonify({"ok": True, "gerados": len(out), "pasta": HYPE_DIR, "detalhes": out[:6],
+                    "msg": f"{len(out)} cortes de hype gerados em estacao/secretaria/sala_criacao/hype/ — aguardam tua aprovacao para publicar."})
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5050))
     print(f"TEMSPEST backend (resultados reais) em http://localhost:{port}")
