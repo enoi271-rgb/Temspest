@@ -306,6 +306,12 @@
         <div class="core-box" id="core-box"><span class="ttl">COMANDANTE "E" (CORE)</span>A aguardar ativacao.</div>
       </div>
       <div class="panel">
+        <div class="panel-head"><span class="panel-num">💬</span><span class="display panel-title">Falar com o E (Mestre)</span></div>
+        <div id="e-chat" style="font-size:9px;color:var(--ink-soft);background:#0a0c08;border:1px solid #2a2f24;border-radius:3px;padding:4px;height:90px;overflow:auto;line-height:1.5;"></div>
+        <textarea id="e-msg" placeholder="Fala com o E (ex: E, prepara a volta do TEMSPEST)..." style="font-family:'IBM Plex Mono';font-size:10px;width:100%;height:32px;margin-top:3px;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;"></textarea>
+        <button class="btn ghost" id="btn-e-send" style="font-size:13px;padding:3px 10px;width:100%;margin-top:2px;color:var(--green);border-color:#2a4a24;">Falar com o E</button>
+      </div>
+      <div class="panel">
         <div class="panel-head"><span class="panel-num">Σ</span><span class="display panel-title">Mestre</span></div>
         <div id="master" style="font-size:11px;color:var(--ink-dim);line-height:1.8;"></div>
       </div>
@@ -863,6 +869,29 @@ function drawStation(){
   ctx.fillText('HERMES // SUPERVISOR',HUB.x,HUB.y+HUB.r+54);
   ctx.textAlign='left';
 
+  // TRONO DO E (SALA DE TRONO) — o E e o Mestre, respeitado, trono dourado sob a nave-mae
+  ctx.save();
+  ctx.translate(HUB.x, HUB.y+HUB.r+92);
+  // degraus
+  ctx.fillStyle='rgba(60,50,30,0.9)';
+  for(let s=0;s<3;s++){ ctx.fillRect(-26+s*6, 10+s*5, 52-s*12, 5); }
+  // assento
+  ctx.fillStyle='rgba(217,154,62,0.95)'; ctx.fillRect(-18,2,36,10);
+  ctx.fillStyle='rgba(180,120,40,0.95)'; ctx.fillRect(-18,2,36,3);
+  // encosto
+  ctx.fillStyle='rgba(217,154,62,0.8)'; ctx.fillRect(-18,-14,36,16);
+  // brilho real (aura)
+  const aura=0.3+0.4*Math.abs(Math.sin(Date.now()/700));
+  ctx.strokeStyle='rgba(217,154,62,'+aura+')'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.ellipse(0,-4,30,34,0,0,Math.PI*2); ctx.stroke();
+  // coroa (E sentado)
+  ctx.fillStyle='rgba(230,190,80,0.98)';
+  ctx.beginPath(); ctx.moveTo(-10,-14); ctx.lineTo(-7,-22); ctx.lineTo(-3,-15); ctx.lineTo(0,-24); ctx.lineTo(3,-15); ctx.lineTo(7,-22); ctx.lineTo(10,-14); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle='rgba(217,154,62,0.95)';ctx.font='9px "IBM Plex Mono"';ctx.textAlign='center';
+  ctx.fillText('👑 SALA DE TRONO // E = MESTRE', HUB.x, HUB.y+HUB.r+108);
+  ctx.textAlign='left';
+
   // TITULO
   ctx.fillStyle='rgba(200,220,255,0.85)';ctx.font='600 16px Teko, sans-serif';
   ctx.fillText('TEMSPEST FLEET // AGENTES-MINIONS',14,26);
@@ -1194,6 +1223,18 @@ document.getElementById('btn-hype').addEventListener('click',()=>{
       document.getElementById('hype-msg').innerHTML='⚡ <b style="color:var(--green)">'+j.gerados+'</b> cortes de hype gerados em <code>estacao/secretaria/sala_criacao/hype/</code> — aguardam tua aprovacao para publicar.';
       log('HYPE: '+j.gerados+' cortes de kills gerados (shorts/reels). Ver sala_criacao/hype/','e');
       renderEstacao();
+      // COLCA 2 NO ECOSSISTEMA COMO "VERSAO FINAL" P/ TU PUBLICARS AGORA
+      const d=j.detalhes||[];
+      const pick=d.filter(x=>x.kind==='short').slice(0,1).concat(d.filter(x=>x.kind==='reel').slice(0,1));
+      pick.forEach((p,k)=>{
+        const id='hype'+Date.now()+k;
+        const pub={id, room:'R1', name:'EDITOR', role:'EDITOR', kind:'clip',
+          result:0, title:(p.kind==='short'?'SHORT':'REEL')+' HYPE #'+(k+1)+' — '+p.clip,
+          caption:'🔥 '+p.clip+' #'+(k+1)+'\nGhost Angolano (TTEMSPESTT) a dominar Warzone.\n#TTEMSPESTT #WarzoneAngola #GhostAngolano',
+          where:(p.kind==='short'?'TikTok':'Instagram Reel'), at:0};
+        state.pending.push(pub);
+      });
+      if(pick.length){ log(pick.length+' hype prontos no ecossistema — clica "Publicar versao final" na lista de aprovacao.','e'); renderPending(); }
     } else {
       document.getElementById('hype-msg').textContent='Erro: '+(j.reason||'');
     }
@@ -1257,6 +1298,19 @@ document.getElementById('btn-info').addEventListener('click',()=>{
   const text=document.getElementById('r-info').value.trim(); if(!text){log('Informacao vazia.','');return;}
   fetch('/api/info',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).then(()=>{log('Informacao enviada aos agentes.','e');document.getElementById('r-info').value='';}).catch(()=>{});
 });
+// CHAT COM O E (ESTACAO MESTRE) — fala direto com o Comandante
+function eSay(who,msg){ const el=document.getElementById('e-chat'); const d=document.createElement('div');
+  d.style.margin='2px 0'; d.innerHTML='<b style="color:'+(who==='E'?'var(--green)':'var(--amber)')+'">'+(who==='E'?'👑 E:':'🫵 Tu:')+'</b> '+msg.replace(/</g,'&lt;');
+  el.appendChild(d); el.scrollTop=el.scrollHeight; while(el.children.length>40)el.removeChild(el.firstChild); }
+function sendToE(){ const inp=document.getElementById('e-msg'); const txt=inp.value.trim(); if(!txt)return;
+  eSay('Tu',txt); inp.value='';
+  // O E acusa rececao e reencaminha para os agentes (via /api/info) + responde no trono
+  fetch('/api/info',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'[DO E] '+txt})}).catch(()=>{});
+  setTimeout(()=>{ eSay('E','Ordem recebida. Estou a alinhar as salas e os agentes ja trabalham nisso. Rumo aos $2B, Migs.'); }, 600);
+  log('Falaste com o E (Mestre): '+txt.slice(0,40),'e');
+}
+document.getElementById('btn-e-send').addEventListener('click',sendToE);
+document.getElementById('e-msg').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendToE();} });
 // agentes processam info pendente -> produzem resultados
 setInterval(()=>{ fetch('/api/info').then(r=>r.json()).then(arr=>{ const pend=arr.filter(x=>x.status==='pendente'); if(pend.length){ const i=pend[0]; log('Agentes a processar info: '+i.text.slice(0,40)+'...','e'); fetch('/api/result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:'CURATOR',room:'R1',kind:'analise',title:'Analise de info #'+i.id,value:0})}).catch(()=>{}); } }).catch(()=>{}); }, 6000);
 // ERRO GLOBAL -> mostra no painel de log (para diagnostico)
