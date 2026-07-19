@@ -1011,6 +1011,53 @@ def gen_melhoria(rede, texto):
     return "\n".join(L)
 
 
+# ---------- GERACAO DE VIDEO REAL (ffmpeg stream-copy) ----------
+import glob as _glob
+import subprocess as _sp
+import random as _random
+VIDEOS_CLIPS = os.path.join(BASE, "videos", "clips")
+
+@app.route("/api/video/cut", methods=["POST"])
+def video_cut():
+    d = request.get_json(force=True) or {}
+    src = (d.get("src") or "").strip()
+    start = float(d.get("start", 0) or 0)
+    dur = float(d.get("dur", 15) or 15)
+    kind = (d.get("kind") or "short").strip()  # short | reel | clip
+    if dur <= 0 or dur > 120:
+        dur = 15
+    # seguranca: so ficheiros dentro de videos/clips
+    if not src:
+        cands = sorted(_glob.glob(os.path.join(VIDEOS_CLIPS, "**", "*.mp4"), recursive=True))
+        if not cands:
+            return jsonify({"ok": False, "reason": "sem clips base"}), 400
+        src = cands[_random.randint(0, len(cands) - 1)]
+    if not src.startswith(VIDEOS_CLIPS):
+        return jsonify({"ok": False, "reason": "src fora de videos/clips"}), 400
+    if not os.path.exists(src):
+        return jsonify({"ok": False, "reason": "clip nao existe"}), 404
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_name = "%s__%s__%s.mp4" % (ts, kind, os.path.splitext(os.path.basename(src))[0])
+    out_path = os.path.join(SALAS["sala_criacao"]["path"], out_name)
+    try:
+        _sp.run(["ffmpeg", "-y", "-ss", str(start), "-i", src, "-t", str(dur),
+                 "-c", "copy", "-movflags", "+faststart", out_path],
+                stdout=_sp.DEVNULL, stderr=_sp.DEVNULL, timeout=60, check=True)
+    except Exception as e:
+        return jsonify({"ok": False, "reason": "ffmpeg: %s" % e}), 500
+    # regista o corte real (para o painel ver)
+    try:
+        with _lock:
+            cx = db()
+            cx.execute("INSERT INTO results(agente,tipo,descricao,valor,ts) VALUES(?,?,?,?,?)",
+                       ("EDITOR", "video", "Corte real: %s (%ss)" % (out_name, int(dur)), 0, ts))
+            cx.commit(); cx.close()
+    except Exception:
+        pass
+    return jsonify({"ok": True, "file": out_name, "path": out_path, "dur": int(dur),
+                    "msg": "Corte real gerado em estacao/secretaria/sala_criacao/"})
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5050))
     print(f"TEMSPEST backend (resultados reais) em http://localhost:{port}")

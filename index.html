@@ -468,6 +468,14 @@ function tick(){
             log(`${a.callsign} (${room.num}) subiu para Lv.${a.level} (+prod)!`,'e');}
           state.hermes.working=true; state.hermes.orders++;
           if(a.morale<1) a.morale=Math.min(1,a.morale+0.03);
+          // === GERACAO DE VIDEO REAL (Sala de Criacao): os agentes cortam clips base ===
+          if(room.id==='r1' && a.role==='EDITOR'){
+            const kind=['short','reel','clip'][rint(0,2)];
+            const start=rint(0,20); const dur=rint(10,20);
+            fetch('/api/video/cut',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({start, dur, kind})}).then(r=>r.json()).then(j=>{
+              if(j.ok){ log(a.callsign+' (R1) gerou corte REAL: '+j.file+' ('+j.dur+'s)','e'); renderEstacao(); }
+            }).catch(()=>{});
+          }
           if(a.cuts && a.learned>=2){
             a.task=randTask(room,a.role);a.busy=rint(3,10);spawnFlow(room,a);
           } else if(a.cuts){
