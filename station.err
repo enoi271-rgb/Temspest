@@ -1,0 +1,208 @@
+Traceback (most recent call last):
+  File "/Users/enoimiguel/TEMSPEST_STATION/server.py", line 36, in <module>
+    from flask import Flask, request, jsonify, Response
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/__init__.py", line 5, in <module>
+    from . import json as json
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/json/__init__.py", line 6, in <module>
+    from ..globals import current_app
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/globals.py", line 6, in <module>
+    from werkzeug.local import LocalProxy
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/__init__.py", line 1, in <module>
+    from .serving import run_simple as run_simple
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/serving.py", line 35, in <module>
+    from .exceptions import InternalServerError
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/exceptions.py", line 52, in <module>
+    from markupsafe import escape
+ModuleNotFoundError: No module named 'markupsafe'
+Traceback (most recent call last):
+  File "/Users/enoimiguel/TEMSPEST_STATION/server.py", line 36, in <module>
+    from flask import Flask, request, jsonify, Response
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/__init__.py", line 5, in <module>
+    from . import json as json
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/json/__init__.py", line 6, in <module>
+    from ..globals import current_app
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/globals.py", line 6, in <module>
+    from werkzeug.local import LocalProxy
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/__init__.py", line 1, in <module>
+    from .serving import run_simple as run_simple
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/serving.py", line 35, in <module>
+    from .exceptions import InternalServerError
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/exceptions.py", line 52, in <module>
+    from markupsafe import escape
+ModuleNotFoundError: No module named 'markupsafe'
+Traceback (most recent call last):
+  File "/Users/enoimiguel/TEMSPEST_STATION/server.py", line 36, in <module>
+    from flask import Flask, request, jsonify, Response
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/__init__.py", line 5, in <module>
+    from . import json as json
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/json/__init__.py", line 6, in <module>
+    from ..globals import current_app
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/globals.py", line 6, in <module>
+    from werkzeug.local import LocalProxy
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/__init__.py", line 1, in <module>
+    from .serving import run_simple as run_simple
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/serving.py", line 35, in <module>
+    from .exceptions import InternalServerError
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/exceptions.py", line 52, in <module>
+    from markupsafe import escape
+ModuleNotFoundError: No module named 'markupsafe'
+Traceback (most recent call last):
+  File "/Users/enoimiguel/TEMSPEST_STATION/server.py", line 36, in <module>
+    from flask import Flask, request, jsonify, Response
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/__init__.py", line 5, in <module>
+    from . import json as json
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/json/__init__.py", line 6, in <module>
+    from ..globals import current_app
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/globals.py", line 6, in <module>
+    from werkzeug.local import LocalProxy
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/__init__.py", line 1, in <module>
+    from .serving import run_simple as run_simple
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/serving.py", line 35, in <module>
+    from .exceptions import InternalServerError
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/exceptions.py", line 52, in <module>
+    from markupsafe import escape
+ModuleNotFoundError: No module named 'markupsafe'
+Traceback (most recent call last):
+  File "/Users/enoimiguel/TEMSPEST_STATION/server.py", line 36, in <module>
+    from flask import Flask, request, jsonify, Response
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/__init__.py", line 5, in <module>
+    from . import json as json
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/json/__init__.py", line 6, in <module>
+    from ..globals import current_app
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/globals.py", line 6, in <module>
+    from werkzeug.local import LocalProxy
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/__init__.py", line 1, in <module>
+    from .serving import run_simple as run_simple
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/serving.py", line 35, in <module>
+    from .exceptions import InternalServerError
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/exceptions.py", line 52, in <module>
+    from markupsafe import escape
+ModuleNotFoundError: No module named 'markupsafe'
+Traceback (most recent call last):
+  File "/Users/enoimiguel/TEMSPEST_STATION/server.py", line 36, in <module>
+    from flask import Flask, request, jsonify, Response
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/__init__.py", line 5, in <module>
+    from . import json as json
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/json/__init__.py", line 6, in <module>
+    from ..globals import current_app
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/globals.py", line 6, in <module>
+    from werkzeug.local import LocalProxy
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/__init__.py", line 1, in <module>
+    from .serving import run_simple as run_simple
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/serving.py", line 35, in <module>
+    from .exceptions import InternalServerError
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/exceptions.py", line 52, in <module>
+    from markupsafe import escape
+ModuleNotFoundError: No module named 'markupsafe'
+Traceback (most recent call last):
+  File "/Users/enoimiguel/TEMSPEST_STATION/server.py", line 36, in <module>
+    from flask import Flask, request, jsonify, Response
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/__init__.py", line 5, in <module>
+    from . import json as json
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/json/__init__.py", line 6, in <module>
+    from ..globals import current_app
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/globals.py", line 6, in <module>
+    from werkzeug.local import LocalProxy
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/__init__.py", line 1, in <module>
+    from .serving import run_simple as run_simple
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/serving.py", line 35, in <module>
+    from .exceptions import InternalServerError
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/exceptions.py", line 52, in <module>
+    from markupsafe import escape
+ModuleNotFoundError: No module named 'markupsafe'
+Traceback (most recent call last):
+  File "/Users/enoimiguel/TEMSPEST_STATION/server.py", line 36, in <module>
+    from flask import Flask, request, jsonify, Response
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/__init__.py", line 5, in <module>
+    from . import json as json
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/json/__init__.py", line 6, in <module>
+    from ..globals import current_app
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/flask/globals.py", line 6, in <module>
+    from werkzeug.local import LocalProxy
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/__init__.py", line 1, in <module>
+    from .serving import run_simple as run_simple
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/serving.py", line 35, in <module>
+    from .exceptions import InternalServerError
+  File "/Users/enoimiguel/TEMSPEST_STATION/.venv/lib/python3.13/site-packages/werkzeug/exceptions.py", line 52, in <module>
+    from markupsafe import escape
+ModuleNotFoundError: No module named 'markupsafe'
+ * Tip: There are .env files present. Install python-dotenv to use them.
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5050
+ * Running on http://192.168.1.71:5050
+[33mPress CTRL+C to quit[0m
+ * Tip: There are .env files present. Install python-dotenv to use them.
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5050
+ * Running on http://192.168.1.71:5050
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [19/Jul/2026 16:13:57] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:13:57] "GET /api/balance HTTP/1.1" 200 -
+ * Tip: There are .env files present. Install python-dotenv to use them.
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5050
+ * Running on http://192.168.1.71:5050
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [19/Jul/2026 16:14:11] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:13] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:14] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:19] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:24] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:29] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:34] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:39] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:44] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:49] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:54] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:31:59] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:04] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:09] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:14] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:19] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:24] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:29] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:34] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:39] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:44] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:49] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:54] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:32:59] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:04] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:09] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:14] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:19] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:24] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:29] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:34] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:39] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:44] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:49] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:54] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:33:59] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:04] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:09] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:14] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:19] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:24] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:29] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:34] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:39] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:44] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:49] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:54] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:34:59] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:04] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:09] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:14] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:19] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:24] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:29] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:34] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:39] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:44] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:49] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:54] "GET /station HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 16:35:59] "GET /station HTTP/1.1" 200 -
