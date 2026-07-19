@@ -212,6 +212,22 @@
     </div>
   </div>
   <div class="panel">
+    <div class="panel-head"><span class="panel-num">WEB</span><span class="display panel-title">Web & Presenca Online (R6)</span></div>
+    <div style="font-size:9px;color:var(--ink-faint);line-height:1.5;">
+      <b style="color:var(--amber)">Criar site/landing</b> — gera o HTML real + guia de publicacao:
+      <input id="web-nome" placeholder="Nome do site (ex: loja-movitel)" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:3px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+      <button onclick="criarSite()" style="font-size:9px;padding:4px 8px;background:#2a5f8f;color:#e6eefb;border:1px solid #5aa0e0;cursor:pointer;border-radius:3px;">Gerar site + guia</button>
+      <div id="webmsg" style="color:var(--green);min-height:12px;margin-top:4px;"></div>
+      <b style="color:var(--amber)">Guia de gestao de conta</b> (como+onde fazer em cada rede):
+      <select id="web-rede" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:3px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+        <option value="instagram">Instagram</option><option value="tiktok">TikTok</option><option value="facebook">Facebook</option><option value="youtube">YouTube</option><option value="x">X</option>
+      </select>
+      <button onclick="criarGuia()" style="font-size:9px;padding:4px 8px;background:#2a5f8f;color:#e6eefb;border:1px solid #5aa0e0;cursor:pointer;border-radius:3px;">Gerar guia + checklist</button>
+      <div style="font-size:9px;color:var(--ink-faint);margin-top:4px;">Ficheiros reais em <b>estacao/sala_web/</b> (sites/ · guias/ · contas/ · presenca/).</div>
+      <div id="web-list" style="font-size:9px;color:var(--ink-dim);margin-top:6px;max-height:120px;overflow:auto;"></div>
+    </div>
+  </div>
+  <div class="panel">
     <div class="panel-head"><span class="panel-num">€</span><span class="display panel-title">Resultados Reais</span></div>
     <div id="real-balance" style="font-size:22px;color:var(--green);margin:6px 0;">$0</div>
     <div style="font-size:9px;color:var(--ink-faint)">Ganho: <span id="real-ganho">$0</span> · Perda: <span id="real-perca">$0</span></div>
@@ -308,6 +324,14 @@ const ROOM_DEFS=[
       COPY_AD:['a escrever headline','a criar copy 30s','a testar CTA'],
       THUMB_MAKER:['a desenhar thumbnail','a A/B versao','a optimizar CTR'],
       CLIENT_MGR:['a enviar 2 versoes','a aguardar aprovacao','a fechar campanha']
+    } },
+  { id:'r6', num:'R6', name:'WEB & PRESENCA ONLINE', func:'Criar sites/landing · gestao de contas · presenca em todas as redes (IG/TikTok/FB/YT/X)', color:'90,160,230',
+    roles:['WEB_DEV','SOCIAL_MGR','BRAND_STRAT','AUTOMATOR'],
+    tasks:{
+      WEB_DEV:['a gerar site/landing','a otimizar SEO','a publicar em Pages/Netlify'],
+      SOCIAL_MGR:['a gerir IG/TikTok/FB','a agendar posts','a responder DMs'],
+      BRAND_STRAT:['a definir presenca','a alinhar bio','a cruzar redes'],
+      AUTOMATOR:['a ligar Meta Suite','a automatizar publicacao','a criar checklists']
     } }
 ];
 
@@ -529,11 +553,12 @@ const cv=document.getElementById('station');const ctx=cv.getContext('2d');
 // posicoes: E no centro; S1 esquerda, S2 cima-direita, S3 baixo-direita
 const HUB={x:cv.width/2, y:cv.height/2, r:46};
 const SALA_POS=[
-  {x:40, y:40, w:300, h:170},                          // R1 cima-esquerda
-  {x:cv.width-400, y:40, w:360, h:150},                // R2 cima-direita
-  {x:cv.width-400, y:cv.height-170, w:360, h:140},     // R3 baixo-direita
-  {x:40, y:cv.height-180, w:300, h:160},               // R4 baixo-esquerda (Gestores Financeiros)
-  {x:cv.width/2-150, y:cv.height-92, w:300, h:84}      // R5 centro-baixo (Estudio Publicitario)
+  {x:20, y:24, w:340, h:120},                          // R1 cima-esquerda
+  {x:cv.width/2-170, y:14, w:340, h:108},              // R2 cima-centro
+  {x:cv.width-360, y:24, w:340, h:120},                // R3 cima-direita
+  {x:20, y:cv.height-150, w:340, h:128},               // R4 baixo-esquerda
+  {x:cv.width/2-170, y:cv.height-132, w:340, h:116},   // R5 baixo-centro
+  {x:cv.width-360, y:cv.height-150, w:340, h:128}      // R6 baixo-direita (Web & Presenca)
 ];
 function roomRect(i){return SALA_POS[i];}
 // ===== DESENHO ESPECIFICO POR SALA =====
@@ -908,6 +933,40 @@ function renderPub(){
     document.getElementById('pub-list').innerHTML=h;
   }).catch(()=>{});
 }
+function criarSite(){
+  const nome=document.getElementById('web-nome').value.trim();
+  if(!nome){alert('Escreve o nome do site.');return;}
+  document.getElementById('webmsg').textContent='A gerar site + guia...';
+  fetch('/api/web/site',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:nome})}).then(r=>r.json()).then(j=>{
+    if(j.ok){
+      document.getElementById('webmsg').textContent='Site gerado: estacao/sala_web/sites/'+j.site+' (guia: estacao/sala_web/guias/'+j.guia+')';
+      document.getElementById('web-nome').value='';
+      renderWeb();
+      log('R6 gerou site para '+j.nome+' + guia de publicacao.','e');
+    } else { document.getElementById('webmsg').textContent='Erro: '+(j.reason||''); }
+  }).catch(()=>{ document.getElementById('webmsg').textContent='Backend indisponivel (servidor local).'; });
+}
+function criarGuia(){
+  const rede=document.getElementById('web-rede').value;
+  document.getElementById('webmsg').textContent='A gerar guia de '+rede+'...';
+  fetch('/api/web/guide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rede:rede})}).then(r=>r.json()).then(j=>{
+    if(j.ok){
+      document.getElementById('webmsg').textContent='Guia '+rede+': guias/'+j.guia+' (onde: '+j.onde+')';
+      renderWeb();
+      log('R6 gerou guia de gestao de '+rede+' + checklist.','e');
+    } else { document.getElementById('webmsg').textContent='Erro: '+(j.reason||''); }
+  }).catch(()=>{ document.getElementById('webmsg').textContent='Backend indisponivel (servidor local).'; });
+}
+function renderWeb(){
+  fetch('/api/estacao').then(r=>r.json()).then(e=>{
+    const w=e.sala_web; if(!w) return;
+    let h='<div style="border-left:2px solid #5aa0e0;padding:4px 6px;background:#12150f;margin-top:4px;">';
+    h+='<b style="color:#5aa0e0">R6 · WEB & PRESENCA</b> <span style="color:var(--ink-faint)">('+w.files.length+' fich.)</span><br>';
+    h+=w.files.slice(0,8).map(f=>'· '+f.name).join('<br>')||'<span style="color:var(--ink-faint)">sem ficheiros ainda</span>';
+    h+='</div>';
+    document.getElementById('web-list').innerHTML=h;
+  }).catch(()=>{});
+}
 document.getElementById('btn-approve-all').addEventListener('click',()=>{
   state.pending.slice().forEach(p=>{ if(!p.plan) approve(p.id); });
   state.plans.forEach(d=>{ if(d.status==='pendente') d.status='aprovado'; });
@@ -926,7 +985,7 @@ state.rooms.forEach(r=>recruitRoom(r,2));
 renderHUD();renderRooms();renderCore();renderMaster();
 log('TEMSPEST STATION online. Agentes a trabalhar rumo aos $2B.','');
 drawStation();
-renderPending();renderPlans();renderEstacao();renderPub();
+renderPending();renderPlans();renderEstacao();renderPub();renderWeb();
 state.rooms.find(r=>r.id==='r2')._planT=0;
 // arranca automaticamente
 

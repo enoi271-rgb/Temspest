@@ -46,6 +46,7 @@ SALAS = {
     "sala_negocios":  {"num": "R3", "name": "SALA DE NEGOCIOS",  "path": os.path.join(ESTACAO, "sala_negocios")},
     "sala_financeira":{"num": "R4", "name": "GESTORES FINANCEIROS", "path": os.path.join(ESTACAO, "sala_financeira")},
     "sala_publicidade":{"num": "R5", "name": "ESTUDIO PUBLICITARIO", "path": os.path.join(ESTACAO, "sala_publicidade")},
+    "sala_web":       {"num": "R6", "name": "WEB & PRESENCA ONLINE", "path": os.path.join(ESTACAO, "sala_web")},
 }
 IDEIAS_DIR = os.path.join(ESTACAO, "ideias_negocio")
 
@@ -56,6 +57,11 @@ NEG_CRIADOS = os.path.join(SALAS["sala_negocios"]["path"], "documentos_criados")
 PUB_BRIEF = os.path.join(SALAS["sala_publicidade"]["path"], "briefings")
 PUB_ADS   = os.path.join(SALAS["sala_publicidade"]["path"], "publicidades")
 PUB_APROV = os.path.join(SALAS["sala_publicidade"]["path"], "aprovacao_cliente")
+# subpastas da Sala Web & Presenca (R6)
+WEB_SITES   = os.path.join(SALAS["sala_web"]["path"], "sites")
+WEB_GUIAS   = os.path.join(SALAS["sala_web"]["path"], "guias")
+WEB_CONTAS  = os.path.join(SALAS["sala_web"]["path"], "contas")
+WEB_PRESENCA= os.path.join(SALAS["sala_web"]["path"], "presenca")
 
 def ensure_estacao():
     os.makedirs(IDEIAS_DIR, exist_ok=True)
@@ -64,6 +70,10 @@ def ensure_estacao():
     os.makedirs(PUB_BRIEF, exist_ok=True)
     os.makedirs(PUB_ADS, exist_ok=True)
     os.makedirs(PUB_APROV, exist_ok=True)
+    os.makedirs(WEB_SITES, exist_ok=True)
+    os.makedirs(WEB_GUIAS, exist_ok=True)
+    os.makedirs(WEB_CONTAS, exist_ok=True)
+    os.makedirs(WEB_PRESENCA, exist_ok=True)
     for s in SALAS.values():
         os.makedirs(s["path"], exist_ok=True)
     # README em cada sala a explicar o que vai la
@@ -73,6 +83,7 @@ def ensure_estacao():
         "sala_negocios":  "Sala de Negocios: documentos_analise/ (coloca AQUI os docs para analisar) + documentos_criados/ (os planos de negocio gerados ficam aqui).",
         "sala_financeira":"A Sala de Gestores Financeiros vai buscar aqui relatorios de capital/contabilidade. O backend escreve aqui os resumos de balanco.",
         "sala_publicidade":"Estudio Publicitario: briefings/ (pedidos de clientes) + publicidades/ (2 versoes geradas por cliente) + aprovacao_cliente/ (aguarda OK do cliente).",
+        "sala_web":       "Web & Presenca Online: sites/ (websites gerados) + guias/ (como+onde fazer em cada rede) + contas/ (checklists de gestao de contas) + presenca/ (estrategia de presenca).",
     }
     for key, s in SALAS.items():
         readme = os.path.join(s["path"], "README.txt")
@@ -722,6 +733,125 @@ def gen_ad(cliente, pedido, v):
     L.append("THUMBNAIL: fundo escuro + 1 elemento da marca + texto curto (<=4 pal.).")
     L.append("CTA: 'Fala connosco' / 'Ver campanha'.")
     L.append("ENTREGA: 2 conceptos (este e a v%d) para aprovacao do cliente." % (2 if v == 1 else 1))
+    return "\n".join(L)
+
+
+def gen_site(nome, tipo):
+    slug = slugify(nome)
+    html = """<!doctype html>
+<html lang="pt">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>%s — TEMSPEST</title>
+<style>body{margin:0;font-family:system-ui,sans-serif;background:#0b0e14;color:#e6e9ef}
+.hero{padding:60px 24px;text-align:center;background:linear-gradient(135deg,#1a1030,#0b0e14)}
+h1{font-size:2.4rem;letter-spacing:.1em}
+.cta{display:inline-block;margin-top:18px;padding:12px 26px;background:#7c3aed;color:#fff;border-radius:8px;text-decoration:none}
+section{padding:32px 24px;max-width:900px;margin:0 auto}
+.card{background:#141925;border:1px solid #252b3b;border-radius:10px;padding:18px;margin:12px 0}
+</style></head>
+<body>
+<header class="hero"><h1>%s</h1><p>Gestao completa por TTEMSPESTT — criado pela Sala R6 (Web & Presenca Online).</p>
+<a class="cta" href="#contacto">Fala connosco</a></header>
+<section><h2>Servicos</h2>
+<div class="card">Criacao de websites e landing pages (esta pagina e gerada automaticamente).</div>
+<div class="card">Gestao de contas e presenca online: Instagram, TikTok, Facebook, YouTube, X.</div>
+<div class="card">Estrategia de crescimento e automacao de publicacao.</div></section>
+<section id="contacto"><h2>Contacto</h2><div class="card">WhatsApp / Instagram @TTEMSPESTT</div></section>
+<footer style="text-align:center;padding:24px;color:#5b6478;font-size:12px">TTEMSPESTT · Ghost Angolano · %s</footer>
+</body></html>""" % (nome, nome, datetime.date.today().isoformat())
+    return html
+
+@app.route("/api/web/site", methods=["POST"])
+def web_site():
+    d = request.get_json(force=True) or {}
+    nome = (d.get("nome") or "site").strip() or "site"
+    tipo = (d.get("tipo") or "landing").strip()
+    if not nome:
+        return jsonify({"ok": False, "reason": "nome vazio"}), 400
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    slug = slugify(nome)
+    # gera site HTML real
+    site_html = gen_site(nome, tipo)
+    site_fname = "%s__%s.html" % (ts, slug)
+    with open(os.path.join(WEB_SITES, site_fname), "w", encoding="utf-8") as f:
+        f.write(site_html)
+    # guia de como publicar
+    guia = gen_web_guia(nome, tipo)
+    guia_fname = "%s__%s__guia.md" % (ts, slug)
+    with open(os.path.join(WEB_GUIAS, guia_fname), "w", encoding="utf-8") as f:
+        f.write(guia)
+    return jsonify({"ok": True, "nome": nome, "site": site_fname, "guia": guia_fname,
+                    "msg": "Site gerado + guia de publicacao. Ver em estacao/sala_web/."})
+
+REDES = {
+ "instagram": {"onde":"app Instagram (Business) + Meta Business Suite", "passos":"1) Criar conta Business · 2) Ligar a FB Page @TTEMSPESTT · 3) Conectar apps (Meta Business Suite) · 4) Agendar posts na Suite · 5) Usar Insights para horarios"},
+ "tiktok": {"onde":"app TikTok + TikTok Creator/ Business", "passos":"1) Conta Pro/ Business · 2) TikTok Creator Portal · 3) Agendar via TikTok Studio (web) · 4) Hashtags #Angola #Warzone #GamingAO · 5) Analytics nativo"},
+ "facebook": {"onde":"Facebook Page + Meta Business Suite", "passos":"1) Criar Page @TTEMSPESTT · 2) Business Manager · 3) Agendar na Suite · 4) Grupos de Angola Gaming · 5) Ads para retencao"},
+ "youtube": {"onde":"YouTube Studio (studio.youtube.com)", "passos":"1) Canal @TEMSPEST999 · 2) Verificacao de telefone · 3) Agendar uploads no Studio · 4) Cards/End screens · 5) Analytics receita/RPM"},
+ "x": {"onde":"x.com + Media Studio", "passos":"1) Conta @TTEMSPESTT · 2) Media Studio agendar · 3) Threads de clips · 4) Spaces ao vivo"},
+}
+
+@app.route("/api/web/guide", methods=["POST"])
+def web_guide():
+    d = request.get_json(force=True) or {}
+    rede = (d.get("rede") or "instagram").strip().lower()
+    if rede not in REDES:
+        return jsonify({"ok": False, "reason": "rede invalida (instagram/tiktok/facebook/youtube/x)"}), 400
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    guia = gen_conta_guia(rede)
+    fname = "%s__%s__guia.md" % (ts, rede)
+    with open(os.path.join(WEB_GUIAS, fname), "w", encoding="utf-8") as f:
+        f.write(guia)
+    # checklist de gestao de conta
+    checklist = gen_conta_checklist(rede)
+    cfname = "%s__%s__checklist.md" % (ts, rede)
+    with open(os.path.join(WEB_CONTAS, cfname), "w", encoding="utf-8") as f:
+        f.write(checklist)
+    return jsonify({"ok": True, "rede": rede, "guia": fname, "checklist": cfname,
+                    "onde": REDES[rede]["onde"]})
+
+def gen_web_guia(nome, tipo):
+    L = []
+    L.append("# GUIA DE PUBLICACAO — %s" % nome)
+    L.append("> Gerado pela Sala R6 (Web & Presenca Online) — %s\n" % datetime.date.today().isoformat())
+    L.append("## 1. ONDE PUBLICAR (escolhe 1)")
+    L.append("  - GitHub Pages (gratis, ideal para landing): sobe o .html na branch e ativa Pages em Settings.")
+    L.append("  - Netlify Drop: arrasta a pasta com o .html para app.netlify.com/drop (deploy em 10s).")
+    L.append("  - Vercel: conecta repo, 0 config. Domínio proprio .ao via registar.ao.")
+    L.append("## 2. COMO (passo a passo)")
+    L.append("  1. Faz download do ficheiro .html gerado.")
+    L.append("  2. Se Netlify: abre app.netlify.com/drop, arrasta o ficheiro.")
+    L.append("  3. Copia o URL (ex: https://<nome>.netlify.app) e partilha.")
+    L.append("## 3. AUTOMATIZAR")
+    L.append("  - Usa o mesmo template para novos clientes (muda nome + cor).")
+    L.append("  - Agendar posts das redes via Meta Business Suite / TikTok Studio (ver pasta contas/).")
+    return "\n".join(L)
+
+def gen_conta_guia(rede):
+    r = REDES.get(rede, {})
+    L = []
+    L.append("# GESTAO DE CONTA — %s" % rede.upper())
+    L.append("> Sala R6 — %s\n" % datetime.date.today().isoformat())
+    L.append("ONDE: %s" % r.get("onde", ""))
+    L.append("PASSOS:")
+    import re as _re
+    for i, p in enumerate(r.get("passos", "").split(" · "), 1):
+        txt = p
+        m = _re.match(r'^\d+\)\s*(.*)$', p)
+        if m: txt = m.group(1)
+        L.append("  %d) %s" % (i, txt))
+    L.append("AUTOMACAO: agendar via ferramenta nativa + conectar a Meta Business Suite (todas as redes num so painel).")
+    return "\n".join(L)
+
+def gen_conta_checklist(rede):
+    L = []
+    L.append("# CHECKLIST DE GESTAO — %s" % rede.upper())
+    L.append("- [ ] Conta criada / verificada")
+    L.append("- [ ] Link a todas as outras redes (bio cruzada)")
+    L.append("- [ ] Bio com CTA + link em bio")
+    L.append("- [ ] 3 posts agendados (Meta Suite / TikTok Studio)")
+    L.append("- [ ] Analise semanal de alcance (pasta presenca/)")
+    L.append("- [ ] Responder DMs em 24h")
     return "\n".join(L)
 
 
