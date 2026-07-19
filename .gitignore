@@ -1,35 +1,44 @@
-# Ignore large media / test clips (keep repo light)
-clips/*.mp4
-clips/*.mov
-clips/*.webm
-clips/*.mkv
-clips/*.jpg
-*.mp4
-*.mov
-.DS_Store
+# ===== TEMSPEST STATION — .gitignore =====
+
+# Runtime / tunnel state (nao versionar)
+station.err
+station.log
+tunnel.log
+tunnel.err
+tunnel_url.txt
+cloudflared.log
+cloudflared.pid
+cloudflared_test.log
+cloudflared
+
+# Python
 __pycache__/
 *.pyc
+.venv/
+*.db
+.env
 
-# Dev/test deps (jsdom, canvas) — nao sao do simulador
+# Node (relatorio de clips/shorts HUD, se houver)
 node_modules/
 package-lock.json
 package.json
 
-# Backend bridge (venv + queue runtime)
-.venv/
-queue.json
-
-# Secrets (numero WhatsApp) — nunca comitar
-.env
-# Base de dados financeira local (resultados reais)
-finance.db
-# Ficheiros de plano de negocio (gerados localmente, pesados em binarios)
-negocios/
-clips_shorts_hud/
-assets/hud_vertical.png
-videos/clips/
-videos/shorts/
-videos/completos/
-clips_shorts_hud/
+# Media / videos / clips (binarios grandes)
+videos/
 clips/
+clips_shorts_hud/
+*.mp4
+*.mov
+*.webm
+*.mkv
+
+# Pastas de trabalho (documentos gerados pelos agentes)
 estacao/
+negocios/
+uploads/
+*.docx
+*.pdf
+
+# OS
+.DS_Store
+.AppleDouble/
