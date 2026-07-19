@@ -172,8 +172,17 @@
 
   <div class="panel">
     <div class="panel-head"><span class="panel-num">DOC</span><span class="display panel-title">Planos de Negocio</span></div>
-    <div id="plans"><div style="font-size:10px;color:var(--ink-faint)">A sala de Negocios gera documentos para aprovacao.</div></div>
-    <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;border-top:1px solid #2a2f24;padding-top:6px;">Ficheiros completos em <b>negocios/</b> (resumo, mercado, produto, receita, KPIs, roadmap, riscos, pitch):<br>
+    <div style="font-size:9px;color:var(--ink-faint);line-height:1.5;">
+      <b style="color:var(--amber)">Carregar PDF / Word</b> (os agentes leem e usam como base):
+      <input id="docfile" type="file" accept=".pdf,.doc,.docx,.txt,.md" style="font-size:9px;width:100%;margin:4px 0;color:var(--ink-dim);">
+      <button onclick="upDoc()" style="font-size:9px;padding:4px 8px;background:#4d5f37;color:#eef4e2;border:1px solid var(--green);cursor:pointer;border-radius:3px;">Enviar ficheiro</button>
+      <div id="docmsg" style="color:var(--green);min-height:12px;"></div>
+      <b style="color:var(--amber)">Tua ideia (breve):</b>
+      <textarea id="idea" placeholder="Ex: canal de warzone para Angola com patrocinios..." style="font-size:9px;width:100%;height:38px;margin:4px 0;background:#12150f;color:var(--ink);border:1px solid #3d4530;border-radius:3px;"></textarea>
+      <button onclick="sendIdea()" style="font-size:9px;padding:4px 8px;background:#4d5f37;color:#eef4e2;border:1px solid var(--green);cursor:pointer;border-radius:3px;">Gerar plano (15 anos exp.)</button>
+    </div>
+    <div id="plans" style="font-size:9px;color:var(--ink-faint);margin-top:6px;max-height:180px;overflow:auto;"></div>
+    <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;border-top:1px solid #2a2f24;padding-top:6px;">Ficheiros completos em <b>negocios/</b>:<br>
       <span style="color:var(--amber)">00_resumo_executivo.md · 01_analise_mercado.md · 02_produto_servico.md · 03_modelo_receita.csv · 04_kpis.json · 05_roadmap.md · 06_riscos.txt · 07_apresentacao.md</span></div>
   </div>
   <div class="panel">
@@ -757,21 +766,33 @@ function mkPlan(room){
 }
 function renderPlans(){
   const box=document.getElementById('plans');
-  if(!state.plans.length){box.innerHTML='<div style="font-size:10px;color:var(--ink-faint)">A sala de Negocios gera documentos para aprovacao.</div>';return;}
-  box.innerHTML=state.plans.map(d=>{
-    const ap=state.pending.find(p=>p.plan&&p.id==='plan-'+d.id);
-    return '<div class="plan-doc"><h4>'+d.idea+'</h4><pre>'+d.text+'</pre>'+(ap?'<button class="btn-app" data-plan="'+d.id+'">Aprovar plano</button> <button class="btn-rej" data-plan="'+d.id+'">Arquivar</button>':'<span style="font-size:9px;color:var(--green)">APROVADO — agentes avancam</span>')+'</div>';
-  }).join('');
-  box.querySelectorAll('.btn-app[data-plan]').forEach(b=>b.addEventListener('click',()=>{
-    const id=b.dataset.plan; const d=state.plans.find(x=>x.id===id); if(d)d.status='aprovado';
-    state.pending=state.pending.filter(p=>!(p.plan&&p.id==='plan-'+id));
-    log('Plano aprovado — sala de Negocios avanca.','e'); renderPlans();renderPending();
-  }));
-  box.querySelectorAll('.btn-rej[data-plan]').forEach(b=>b.addEventListener('click',()=>{
-    const id=b.dataset.plan; state.plans=state.plans.filter(x=>x.id!==id);
-    state.pending=state.pending.filter(p=>!(p.plan&&p.id==='plan-'+id));
-    log('Plano arquivado.','e'); renderPlans();renderPending();
-  }));
+  // mostra planos do backend (Sala de Negocios, 15 anos exp.)
+  fetch('/api/business').then(r=>r.json()).then(b=>{
+    let html='';
+    (b.plans||[]).forEach(d=>{
+      html+='<div class="plan-doc"><h4>'+ (d.idea||'').slice(0,80) +'</h4>'+
+             '<div style="color:var(--ink-faint);font-size:8px;">por '+(d.autor||'?')+' · meta '+(d.meta_receita||0)+' USD · '+ (d.prazo_meses||0) +' meses</div>'+
+             '<pre style="white-space:pre-wrap;max-height:160px;overflow:auto;font-size:8px;color:var(--ink-dim);background:#12150f;padding:6px;border:1px solid #2a2f24;border-radius:3px;">'+(d.plano||'').slice(0,1400)+'</pre></div>';
+    });
+    if(!html) html='<div style="font-size:10px;color:var(--ink-faint)">Introduz uma ideia ou carrega um PDF/Word para a Sala de Negocios gerar plano completo.</div>';
+    box.innerHTML=html;
+  }).catch(()=>{ box.innerHTML='<div style="font-size:10px;color:var(--ink-faint)">Sala de Negocios (backend) indisponivel.</div>'; });
+}
+function upDoc(){
+  const f=document.getElementById('docfile').files[0]; if(!f){document.getElementById('docmsg').textContent='Escolhe um ficheiro.';return;}
+  const fd=new FormData(); fd.append('file',f);
+  fetch('/api/doc/upload',{method:'POST',body:fd}).then(r=>r.json()).then(j=>{
+    document.getElementById('docmsg').textContent = j.ok? ('Carregado: '+j.filename+' ('+j.chars+' chars) — agentes vao usar.') : ('Erro: '+(j.reason||''));
+    if(j.ok) renderPlans();
+  }).catch(()=>{document.getElementById('docmsg').textContent='Falhou o envio.';});
+}
+function sendIdea(){
+  const t=document.getElementById('idea').value.trim(); if(!t){alert('Escreve a tua ideia.');return;}
+  fetch('/api/idea',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:t})}).then(r=>r.json()).then(j=>{
+    if(j.ok){ document.getElementById('idea').value=''; renderPlans();
+      log('Sala de Negocios gerou plano ('+j.autor+') — meta '+j.meta_usd+' USD / '+j.prazo+' meses.','e'); }
+    else alert('Erro: '+(j.reason||''));
+  }).catch(()=>alert('Backend indisponivel.'));
 }
 document.getElementById('btn-approve-all').addEventListener('click',()=>{
   state.pending.slice().forEach(p=>{ if(!p.plan) approve(p.id); });

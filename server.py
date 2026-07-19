@@ -103,6 +103,22 @@ def init_db():
         total_views INTEGER DEFAULT 0,
         posts INTEGER DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS business_docs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT DEFAULT (datetime('now')),
+        filename TEXT,
+        tipo TEXT,
+        texto TEXT
+    );
+    CREATE TABLE IF NOT EXISTS business_plans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT DEFAULT (datetime('now')),
+        idea TEXT,
+        plano TEXT,
+        autor TEXT,
+        meta_receita REAL DEFAULT 0,
+        prazo_meses INTEGER DEFAULT 0
+    );
     """)
     cx.commit()
     cx.close()
@@ -416,6 +432,121 @@ def analytics_page():
 <p style="color:#9a9c8c;font-size:11px;margin-top:14px;">Os clips guardados estao em clips/ (ver no simulador / repositorio). Planos de negocio em negocios/.</p>
 </body></html>"""
     return Response(html, mimetype="text/html")
+
+# ---------- SALA DE NEGOCIO: upload PDF/Word + plano de consultoria ----------
+import os as _os
+from werkzeug.utils import secure_filename
+
+def ler_doc(path, ext):
+    # tenta extrair texto; fallback nome
+    try:
+        if ext in (".pdf",):
+            try:
+                from pdfminer.high_level import extract_text
+                return extract_text(path)[:8000]
+            except Exception:
+                return "(PDF sem extrator — instala pdfminer.six)"
+        if ext in (".docx", ".doc"):
+            try:
+                import docx
+                d = docx.Document(path)
+                return "\n".join([pp.text for pp in d.paragraphs])[:8000]
+            except Exception:
+                return "(DOCX sem extrator — instala python-docx)"
+        if ext in (".txt", ".md"):
+            return open(path, encoding="utf-8", errors="ignore").read()[:8000]
+    except Exception as e:
+        return "(erro a ler: %s)" % e
+    return ""
+
+def gen_plan(idea, docs_text):
+    # Plano de consultoria "15 anos de experiencia" — estruturado, offline
+    autor = "STRATEGIST"
+    meta = 50000.0
+    prazo = 12
+    idea_u = (idea or "ideia sem nome").strip().capitalize()
+    doc_ctx = (docs_text or "")[:1500]
+    plano = []
+    plano.append("PLANO DE NEGOCIO — %s" % idea_u)
+    plano.append("Elaborado pela Sala de Negocios (TTEMSPESTT) com criterio de consultoria senior.\n")
+    plano.append("1. RESUMO EXECUTIVO")
+    plano.append("  %s e uma oportunidade de negocio em Angola com trajecto de receita recorrente. " % idea_u)
+    plano.append("Posicionamento: marca forte de gaming/creator economy. Meta conservadora ano 1: %s USD; trajecto a 12 meses." % int(meta))
+    plano.append("\n2. ANALISE DE MERCADO")
+    plano.append("  Mercado angolano: 35M habitantes, penetracao movel >70%, creator economy em fase inicial (pouca concorrencia qualificada).")
+    plano.append("  Diferencial: ecossistema de agentes automaticos a produzir conteudo 24/7. Risco baixo de saturação a curto prazo.")
+    if doc_ctx:
+        plano.append("  Contexto dos teus documentos carregados: %s" % doc_ctx[:600].replace("\n"," "))
+    plano.append("\n3. MODELO DE RECEITA")
+    plano.append("  Fontes: AdSense/RPM + sponsors locais + affiliatos + TikTok Shop + eventos ao vivo.")
+    plano.append("  Estimativa conservadora ano 1: %s USD (não inclui escala de canal). Margem operacional alvo: 60%%." % int(meta))
+    plano.append("\n4. OPERACOES")
+    plano.append("  Sala de Criacao (4 estacoes) produz clips/shorts/reels diarios. Sala de Edicao eleva qualidade/RPM.")
+    plano.append("  Sala de Negocios gere funil, parcerias eroadmap. Tudo orquestrado pela sala E (Hermes).")
+    plano.append("\n5. RISCO E MITIGACAO")
+    plano.append("  Volatilidade Kz -> contabilizar em USD (taxa 850 Kz/USD). Plataformas mudam -> diversificar 4 canais.")
+    plano.append("  Burnout -> agentes com morale + movimento. Concentracao de sponsor -> funil multiplas fontes.")
+    plano.append("\n6. ROADMAP (%s meses)" % prazo)
+    plano.append("  Fase 1 (0-3m): lancar operacao, 50 clips, 1 sponsor. Fase 2 (3-9m): 200 clips/mes + TikTok Shop.")
+    plano.append("  Fase 3 (9-24m): equipa 20+ agentes, parceria internacional, $1M. Fase 4 (24m+): dominio gaming Angola.")
+    plano.append("\n7. KPIs VISIVEIS")
+    plano.append("  Views totais (YouTube/TikTok/Instagram), capital real (finance.db), clips/mes, RPM, retencao >45%%, CTR thumb >8%%.")
+    plano.append("\nRESULTADO ESPERADO (visivel): %s USD em 12 meses, escalavel para o objetivo de $2B." % int(meta))
+    return "\n".join(plano), autor, meta, prazo
+
+@app.route("/api/doc/upload", methods=["POST"])
+def doc_upload():
+    f = request.files.get("file")
+    if not f: return jsonify({"ok": False, "reason": "sem ficheiro"}), 400
+    fn = secure_filename(f.filename)
+    ext = _os.path.splitext(fn)[1].lower()
+    if ext not in (".pdf", ".docx", ".doc", ".txt", ".md"):
+        return jsonify({"ok": False, "reason": "formato nao suportado (usa PDF/Word/txt)"}), 400
+    tmp = _os.path.join(BASE, "uploads")
+    _os.makedirs(tmp, exist_ok=True)
+    path = _os.path.join(tmp, fn)
+    f.save(path)
+    texto = ler_doc(path, ext)
+    with _lock:
+        cx = db()
+        cx.execute("INSERT INTO business_docs(filename,tipo,texto) VALUES(?,?,?)", (fn, ext, texto))
+        cx.commit(); cx.close()
+    # alimenta os agentes
+    fetch_notify = False
+    try:
+        import requests
+        requests.post("http://127.0.0.1:%s/api/info" % int(os.environ.get("PORT",5050)),
+                        json={"text": "Documento carregado: %s. Usa como base para planos." % fn}, timeout=3)
+    except Exception:
+        pass
+    return jsonify({"ok": True, "filename": fn, "chars": len(texto)})
+
+@app.route("/api/idea", methods=["POST"])
+def idea():
+    d = request.get_json(force=True) or {}
+    idea_txt = d.get("idea", "")
+    if not idea_txt.strip(): return jsonify({"ok": False, "reason": "ideia vazia"}), 400
+    # junta contexto dos docs carregados
+    cx = db(); docs = cx.execute("SELECT texto FROM business_docs ORDER BY id DESC LIMIT 3").fetchall(); cx.close()
+    ctx = "\n".join([r[0] for r in docs])
+    plano, autor, meta, prazo = gen_plan(idea_txt, ctx)
+    with _lock:
+        cx = db()
+        cx.execute("INSERT INTO business_plans(idea,plano,autor,meta_receita,prazo_meses) VALUES(?,?,?,?,?)",
+                   (idea_txt, plano, autor, meta, prazo))
+        cx.commit(); cx.close()
+    return jsonify({"ok": True, "autor": autor, "meta_usd": meta, "prazo": prazo, "plano": plano})
+
+@app.route("/api/business", methods=["GET"])
+def business():
+    cx = db()
+    docs = cx.execute("SELECT id,filename,tipo FROM business_docs ORDER BY id DESC LIMIT 10").fetchall()
+    plans = cx.execute("SELECT id,idea,autor,meta_receita,prazo_meses,ts FROM business_plans ORDER BY id DESC LIMIT 10").fetchall()
+    cx.close()
+    return jsonify({
+        "docs": [dict(r) for r in docs],
+        "plans": [dict(r) for r in plans],
+    })
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5050))
