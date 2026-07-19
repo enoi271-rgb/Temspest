@@ -45,19 +45,34 @@ SALAS = {
     "sala_edicao":    {"num": "R2", "name": "SALA DE EDICAO",    "path": os.path.join(ESTACAO, "sala_edicao")},
     "sala_negocios":  {"num": "R3", "name": "SALA DE NEGOCIOS",  "path": os.path.join(ESTACAO, "sala_negocios")},
     "sala_financeira":{"num": "R4", "name": "GESTORES FINANCEIROS", "path": os.path.join(ESTACAO, "sala_financeira")},
+    "sala_publicidade":{"num": "R5", "name": "ESTUDIO PUBLICITARIO", "path": os.path.join(ESTACAO, "sala_publicidade")},
 }
 IDEIAS_DIR = os.path.join(ESTACAO, "ideias_negocio")
 
+# subpastas da Sala de Negocios
+NEG_ANALISE = os.path.join(SALAS["sala_negocios"]["path"], "documentos_analise")
+NEG_CRIADOS = os.path.join(SALAS["sala_negocios"]["path"], "documentos_criados")
+# subpastas da Sala de Publicidade (R5)
+PUB_BRIEF = os.path.join(SALAS["sala_publicidade"]["path"], "briefings")
+PUB_ADS   = os.path.join(SALAS["sala_publicidade"]["path"], "publicidades")
+PUB_APROV = os.path.join(SALAS["sala_publicidade"]["path"], "aprovacao_cliente")
+
 def ensure_estacao():
     os.makedirs(IDEIAS_DIR, exist_ok=True)
+    os.makedirs(NEG_ANALISE, exist_ok=True)
+    os.makedirs(NEG_CRIADOS, exist_ok=True)
+    os.makedirs(PUB_BRIEF, exist_ok=True)
+    os.makedirs(PUB_ADS, exist_ok=True)
+    os.makedirs(PUB_APROV, exist_ok=True)
     for s in SALAS.values():
         os.makedirs(s["path"], exist_ok=True)
     # README em cada sala a explicar o que vai la
     hints = {
         "sala_criacao":   "Aqui a Sala de Criacao vai buscar referencias de clips/shorts/hashtags. Coloca aqui: estilos, exemplos, briefings de edicao.",
         "sala_edicao":    "Aqui a Sala de Edicao vai buscar referencias de cor, som, thumbnails. Coloca aqui: LUTs, audio refs, estilos de thumb.",
-        "sala_negocios":  "A Sala de Negocios vai buscar AQUI toda a informacao necessaria (briefings, concorrencia, numeros). Os documentos de ideia gerados tambem alimentam esta pasta.",
+        "sala_negocios":  "Sala de Negocios: documentos_analise/ (coloca AQUI os docs para analisar) + documentos_criados/ (os planos de negocio gerados ficam aqui).",
         "sala_financeira":"A Sala de Gestores Financeiros vai buscar aqui relatorios de capital/contabilidade. O backend escreve aqui os resumos de balanco.",
+        "sala_publicidade":"Estudio Publicitario: briefings/ (pedidos de clientes) + publicidades/ (2 versoes geradas por cliente) + aprovacao_cliente/ (aguarda OK do cliente).",
     }
     for key, s in SALAS.items():
         readme = os.path.join(s["path"], "README.txt")
@@ -630,6 +645,85 @@ def business():
         "docs": [dict(r) for r in docs],
         "plans": [dict(r) for r in plans],
     })
+
+@app.route("/api/ad/brief", methods=["POST"])
+def ad_brief():
+    d = request.get_json(force=True) or {}
+    cliente = (d.get("cliente") or "cliente").strip() or "cliente"
+    pedido = (d.get("pedido") or "").strip()
+    if not pedido:
+        return jsonify({"ok": False, "reason": "pedido vazio"}), 400
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    slug = slugify(cliente)
+    # guarda o briefing do cliente (entrada)
+    brief_path = os.path.join(PUB_BRIEF, "%s__%s.txt" % (ts, slug))
+    with open(brief_path, "w", encoding="utf-8") as f:
+        f.write("CLIENTE: %s\nPEDIDO: %s\nDATA: %s\n" % (cliente, pedido, ts))
+    # gera 2 versoes de publicidade/thumbnail (copy + concepto)
+    versoes = []
+    for v in (1, 2):
+        vtext = gen_ad(cliente, pedido, v)
+        fname = "%s__%s__v%d.md" % (ts, slug, v)
+        vpath = os.path.join(PUB_ADS, fname)
+        with open(vpath, "w", encoding="utf-8") as f:
+            f.write("# PUBLICIDADE v%d — %s\n\n" % (v, cliente))
+            f.write("> Gerado pelo Estudio Publicitario (TTEMSPESTT) — %s\n\n" % ts)
+            f.write(vtext)
+            f.write("\n\n---\n*Aguarda aprovacao do cliente. Pasta: estacao/sala_publicidade/publicidades/%s*\n" % fname)
+        versoes.append({"versao": v, "file": fname, "texto": vtext})
+    # ficheiro de aprovacao (estado: pendente)
+    apr_path = os.path.join(PUB_APROV, "%s__%s.json" % (ts, slug))
+    with open(apr_path, "w", encoding="utf-8") as f:
+        json.dump({"cliente": cliente, "pedido": pedido, "ts": ts, "status": "pendente",
+                   "versoes": [vv["file"] for vv in versoes]}, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok": True, "cliente": cliente, "brief": os.path.basename(brief_path),
+                    "versoes": [vv["file"] for vv in versoes], "status": "pendente"})
+
+@app.route("/api/ad/approve", methods=["POST"])
+def ad_approve():
+    d = request.get_json(force=True) or {}
+    ts = d.get("ts"); slug = d.get("slug"); versao = int(d.get("versao", 1))
+    if not ts or not slug:
+        return jsonify({"ok": False, "reason": "faltam ts/slug"}), 400
+    apr_path = os.path.join(PUB_APROV, "%s__%s.json" % (ts, slug))
+    if not os.path.exists(apr_path):
+        return jsonify({"ok": False, "reason": "pedido nao encontrado"}), 404
+    data = json.load(open(apr_path, encoding="utf-8"))
+    data["status"] = "aprovado"
+    data["versao_aprovada"] = versao
+    json.dump(data, open(apr_path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    # regista o resultado (permite avancar projetos)
+    try:
+        with _lock:
+            cx = db()
+            cx.execute("INSERT INTO results(agente,tipo,descricao,valor,ts) VALUES(?,?,?,?,?)",
+                       ("ESTUDIO_PUB", "publicidade", "Cliente %s aprovou v%d" % (data["cliente"], versao), 0, ts))
+            cx.commit(); cx.close()
+    except Exception:
+        pass
+    return jsonify({"ok": True, "cliente": data["cliente"], "versao_aprovada": versao, "status": "aprovado"})
+
+def gen_ad(cliente, pedido, v):
+    # gera copy de publicidade (2 versoes distintas) — tom consultor/publicitario
+    if v == 1:
+        tom = "emocional/impacto"
+        head = "Sente a adrenalina. Seja a marca que todos lembram."
+    else:
+        tom = "racional/beneficio"
+        head = "Resultados que falam por si. A tua marca, no proximo nivel."
+    L = []
+    L.append("VERSAO %d (%s)" % (v, tom))
+    L.append("HEADLINE: %s" % head)
+    L.append("CLIENTE: %s" % cliente)
+    L.append("PEDIDO: %s" % pedido)
+    L.append("COPY (30s):")
+    L.append("  [%s] %s — conteudo criado pela TEMSPEST para %s. Thumbnail: contraste alto,")
+    L.append("  logo do cliente a direita, CTA 'Sabe mais' em baixo. Formato 1080x1920 (Reels/Shorts).")
+    L.append("THUMBNAIL: fundo escuro + 1 elemento da marca + texto curto (<=4 pal.).")
+    L.append("CTA: 'Fala connosco' / 'Ver campanha'.")
+    L.append("ENTREGA: 2 conceptos (este e a v%d) para aprovacao do cliente." % (2 if v == 1 else 1))
+    return "\n".join(L)
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5050))

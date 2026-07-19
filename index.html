@@ -200,6 +200,18 @@
     <button onclick="renderEstacao()" style="font-size:9px;padding:3px 8px;background:#2a2f24;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;margin-top:4px;">Atualizar pastas</button>
   </div>
   <div class="panel">
+    <div class="panel-head"><span class="panel-num">PUB</span><span class="display panel-title">Estudio Publicitario (R5)</span></div>
+    <div style="font-size:9px;color:var(--ink-faint);line-height:1.5;">
+      <b style="color:var(--amber)">Briefing do cliente</b> — o estudio cria <b style="color:var(--green)">2 versoes</b> de thumbnail/anuncio e envia para aprovacao:
+      <input id="pub-cliente" placeholder="Nome do cliente" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:3px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+      <textarea id="pub-pedido" placeholder="Ex: publicidade para loja de telemoveis em Luanda — promocao de verao" style="font-size:9px;width:100%;height:38px;margin:3px 0;background:#12150f;color:var(--ink);border:1px solid #3d4530;border-radius:3px;"></textarea>
+      <button onclick="criarPub()" style="font-size:9px;padding:4px 8px;background:#5f37b3;color:#efeafb;border:1px solid #b388ff;cursor:pointer;border-radius:3px;">Criar 2 versoes → cliente</button>
+      <div id="pubmsg" style="color:var(--green);min-height:14px;margin-top:4px;"></div>
+      <div style="font-size:9px;color:var(--ink-faint);margin-top:4px;">Apos aprovacao do cliente (em <b>aprovacao_cliente/</b>), os projetos avancam. Vê em <b>publicidades/</b>.</div>
+      <div id="pub-list" style="font-size:9px;color:var(--ink-dim);margin-top:6px;max-height:120px;overflow:auto;"></div>
+    </div>
+  </div>
+  <div class="panel">
     <div class="panel-head"><span class="panel-num">€</span><span class="display panel-title">Resultados Reais</span></div>
     <div id="real-balance" style="font-size:22px;color:var(--green);margin:6px 0;">$0</div>
     <div style="font-size:9px;color:var(--ink-faint)">Ganho: <span id="real-ganho">$0</span> · Perda: <span id="real-perca">$0</span></div>
@@ -288,6 +300,14 @@ const ROOM_DEFS=[
       TREASURER:['a registar ganho','a registar perca','a consolidar Kz/$'],
       AUDITOR:['a auditar fluxo','a validar contagem','a cruzar receita'],
       ANALYST_FIN:['a ler analytics','a medir ROI','a projetar views']
+    } },
+  { id:'r5', num:'R5', name:'ESTUDIO PUBLICITARIO', func:'Criar thumbnails + anuncios para clientes · 2 versões · aguarda aprovação', color:'180,120,230',
+    roles:['ART_DIR','COPY_AD','THUMB_MAKER','CLIENT_MGR'],
+    tasks:{
+      ART_DIR:['a criar concepto visual','a definir paleta','a direcionar thumbnail'],
+      COPY_AD:['a escrever headline','a criar copy 30s','a testar CTA'],
+      THUMB_MAKER:['a desenhar thumbnail','a A/B versao','a optimizar CTR'],
+      CLIENT_MGR:['a enviar 2 versoes','a aguardar aprovacao','a fechar campanha']
     } }
 ];
 
@@ -509,10 +529,11 @@ const cv=document.getElementById('station');const ctx=cv.getContext('2d');
 // posicoes: E no centro; S1 esquerda, S2 cima-direita, S3 baixo-direita
 const HUB={x:cv.width/2, y:cv.height/2, r:46};
 const SALA_POS=[
-  {x:40, y:40, w:300, h:200},                          // R1 cima-esquerda
-  {x:cv.width-400, y:40, w:360, h:160},                // R2 cima-direita
-  {x:cv.width-400, y:cv.height-180, w:360, h:150},     // R3 baixo-direita
-  {x:40, y:cv.height-200, w:300, h:170}                // R4 baixo-esquerda (Gestores Financeiros)
+  {x:40, y:40, w:300, h:170},                          // R1 cima-esquerda
+  {x:cv.width-400, y:40, w:360, h:150},                // R2 cima-direita
+  {x:cv.width-400, y:cv.height-170, w:360, h:140},     // R3 baixo-direita
+  {x:40, y:cv.height-180, w:300, h:160},               // R4 baixo-esquerda (Gestores Financeiros)
+  {x:cv.width/2-150, y:cv.height-92, w:300, h:84}      // R5 centro-baixo (Estudio Publicitario)
 ];
 function roomRect(i){return SALA_POS[i];}
 // ===== DESENHO ESPECIFICO POR SALA =====
@@ -862,6 +883,31 @@ function renderEstacao(){
     document.getElementById('estacao').innerHTML=h;
   }).catch(()=>{ document.getElementById('estacao').innerHTML='<span style="color:var(--ink-faint)">Backend indisponivel (precisa do servidor local).</span>'; });
 }
+function criarPub(){
+  const cliente=document.getElementById('pub-cliente').value.trim();
+  const pedido=document.getElementById('pub-pedido').value.trim();
+  if(!pedido){alert('Escreve o pedido do cliente.');return;}
+  document.getElementById('pubmsg').textContent='A criar 2 versoes...';
+  fetch('/api/ad/brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cliente:cliente,pedido:pedido})}).then(r=>r.json()).then(j=>{
+    if(j.ok){
+      document.getElementById('pubmsg').textContent='2 versoes criadas para '+j.cliente+' — aguarda aprovacao do cliente.';
+      document.getElementById('pub-cliente').value=''; document.getElementById('pub-pedido').value='';
+      renderPub();
+      log('Estudio Publicitario (R5) criou 2 versoes p/ '+j.cliente+' — aguarda OK do cliente.','e');
+    } else { document.getElementById('pubmsg').textContent='Erro: '+(j.reason||''); }
+  }).catch(()=>{ document.getElementById('pubmsg').textContent='Backend indisponivel (servidor local).'; });
+}
+function renderPub(){
+  fetch('/api/estacao').then(r=>r.json()).then(e=>{
+    const pub=e.sala_publicidade; if(!pub) return;
+    let h='<div style="border-left:2px solid #b388ff;padding:4px 6px;background:#12150f;margin-top:4px;">';
+    h+='<b style="color:#b388ff">R5 · ESTUDIO PUBLICITARIO</b> <span style="color:var(--ink-faint)">('+pub.files.length+' fich.)</span><br>';
+    const ads=pub.files.filter(f=>f.name.includes('publicidades')||f.name.endsWith('.md'));
+    h+=ads.slice(0,6).map(f=>'· '+f.name).join('<br>')||'<span style="color:var(--ink-faint)">sem publicidades ainda</span>';
+    h+='</div>';
+    document.getElementById('pub-list').innerHTML=h;
+  }).catch(()=>{});
+}
 document.getElementById('btn-approve-all').addEventListener('click',()=>{
   state.pending.slice().forEach(p=>{ if(!p.plan) approve(p.id); });
   state.plans.forEach(d=>{ if(d.status==='pendente') d.status='aprovado'; });
@@ -880,7 +926,7 @@ state.rooms.forEach(r=>recruitRoom(r,2));
 renderHUD();renderRooms();renderCore();renderMaster();
 log('TEMSPEST STATION online. Agentes a trabalhar rumo aos $2B.','');
 drawStation();
-renderPending();renderPlans();renderEstacao();
+renderPending();renderPlans();renderEstacao();renderPub();
 state.rooms.find(r=>r.id==='r2')._planT=0;
 // arranca automaticamente
 
