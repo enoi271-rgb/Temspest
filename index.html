@@ -266,6 +266,7 @@
     <input id="r-origin" placeholder="Origem (YouTube/TikTok/IG/Sponsor)" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
     <input id="r-agent" placeholder="Agente" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
     <button class="btn-app" id="btn-entry" style="font-size:13px;padding:3px 10px;width:100%;margin-top:4px;">Registar</button>
+    <button class="btn ghost" id="btn-zero" style="font-size:13px;padding:3px 10px;width:100%;margin-top:4px;color:#c04a34;border-color:#5a2a24;">Zerar capital (limpar tudo)</button>
     <div style="font-size:10px;color:var(--ink-dim);margin-top:10px;">Informacao para os agentes</div>
     <textarea id="r-info" placeholder="Cola briefing / dados / tendencias..." style="font-family:'IBM Plex Mono';font-size:10px;width:100%;height:48px;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;"></textarea>
     <button class="btn ghost" id="btn-info" style="font-size:13px;padding:3px 10px;width:100%;">Enviar aos agentes</button>
@@ -754,29 +755,46 @@ function drawStation(){
     ctx.restore();
   });
 
-  // SALA DE RELAXE (R8) — modulo acoplado à nave-mae: bots descansam e rodam turno
+  // SALA DE RELAXE (R8) — modulo acoplado à nave-mae: bar + mesa de snooker + sofas, bots convivem e rodam turno
   {
-    const rx=HUB.x-58, ry=HUB.y+2, rw=116, rh=20;
+    const rx=HUB.x-72, ry=HUB.y+4, rw=144, rh=46;
     const pulseR=0.4+0.6*Math.abs(Math.sin(Date.now()/900));
     ctx.save();
-    ctx.fillStyle='rgba(40,46,38,0.85)'; ctx.strokeStyle='rgba(143,179,90,'+(0.5*pulseR)+')'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.ellipse(rx+rw/2, ry+rh/2, rw/2, rh/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-    // "Z" a flutuar
-    ctx.fillStyle='rgba(143,179,90,'+(0.5+0.4*pulseR)+')'; ctx.font='600 11px Teko, sans-serif'; ctx.textAlign='center';
-    ctx.fillText('Z z Z', rx+rw/2, ry-4);
-    // bots a descansar (ate 3) com morale a recuperar
+    // modulo (casco da sala)
+    ctx.fillStyle='rgba(38,44,34,0.9)'; ctx.strokeStyle='rgba(143,179,90,'+(0.55*pulseR)+')'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(rx,ry,rw,rh,8); ctx.fill(); ctx.stroke();
+    // teto/letreiro
+    ctx.fillStyle='rgba(143,179,90,'+(0.5+0.4*pulseR)+')'; ctx.font='600 9px Teko, sans-serif'; ctx.textAlign='center';
+    ctx.fillText('♨ SALA DE RELAXE', rx+rw/2, ry-3);
+    // --- BAR (esquerda) ---
+    ctx.fillStyle='rgba(90,60,30,0.95)'; ctx.fillRect(rx+6, ry+10, 26, 18); // balcao
+    ctx.fillStyle='rgba(217,154,62,0.9)'; // garrafas
+    for(let b=0;b<3;b++){ ctx.fillRect(rx+9+b*7, ry+4, 3, 7); }
+    ctx.fillStyle='rgba(200,210,230,0.5)'; ctx.font='6px "IBM Plex Mono"'; ctx.fillText('BAR', rx+19, ry+32);
+    // --- MESA DE SNOOKER (centro) ---
+    const mx=rx+rw/2, my=ry+22;
+    ctx.fillStyle='rgba(20,60,30,0.95)'; ctx.beginPath(); ctx.ellipse(mx,my,20,11,0,0,Math.PI*2); ctx.fill(); // feltro
+    ctx.strokeStyle='rgba(180,140,60,0.9)'; ctx.lineWidth=1.5; ctx.stroke(); // taco/barra
+    ctx.fillStyle='rgba(230,230,210,0.95)'; ctx.beginPath(); ctx.arc(mx+10,my-3,1.6,0,Math.PI*2); ctx.fill(); // bola branca
+    ctx.fillStyle='rgba(200,40,40,0.95)'; ctx.beginPath(); ctx.arc(mx-8,my+2,1.6,0,Math.PI*2); ctx.fill(); // bola vermelha
+    ctx.fillStyle='rgba(200,210,230,0.5)'; ctx.font='6px "IBM Plex Mono"'; ctx.fillText('SNOOKER', mx, ry+42);
+    // --- SOFAS (direita) ---
+    ctx.fillStyle='rgba(70,80,100,0.9)'; ctx.fillRect(rx+rw-30, ry+12, 24, 14); // sofá
+    ctx.fillStyle='rgba(70,80,100,0.7)'; ctx.fillRect(rx+rw-30, ry+8, 24, 6); // encosto
+    ctx.fillStyle='rgba(200,210,230,0.5)'; ctx.font='6px "IBM Plex Mono"'; ctx.fillText('SOFA', rx+rw-18, ry+34);
+    // bots a conviver (ate 4) — descansam OU apenas socializam
     const resting=[];
     state.rooms.forEach(r=>r.agents.forEach(a=>{ if(a.state==='rest') resting.push(a); }));
-    resting.slice(0,3).forEach((a,k)=>{
-      const zx=rx+22+k*36, zy=ry+rh/2;
+    resting.slice(0,4).forEach((a,k)=>{
+      const zx=rx+14+ (k%4)*31, zy=ry+10 + (k>=4?12:0);
       const bob=Math.sin(Date.now()/300+k)*1.5;
-      ctx.fillStyle='rgba(230,210,80,0.95)'; ctx.beginPath(); ctx.ellipse(zx,zy+bob,7,9,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(230,210,80,0.95)'; ctx.beginPath(); ctx.ellipse(zx,zy+bob,6,8,0,0,Math.PI*2); ctx.fill();
       ctx.strokeStyle='rgba(120,100,20,0.9)'; ctx.lineWidth=1; ctx.stroke();
-      ctx.fillStyle='#0a0c08'; ctx.beginPath(); ctx.arc(zx-2,zy-2+bob,1.6,0,Math.PI*2); ctx.arc(zx+2,zy-2+bob,1.6,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='rgba(200,210,230,0.6)'; ctx.font='6px "IBM Plex Mono"'; ctx.fillText(a.callsign.slice(0,5), zx, zy+15);
+      ctx.fillStyle='#0a0c08'; ctx.beginPath(); ctx.arc(zx-2,zy-2+bob,1.4,0,Math.PI*2); ctx.arc(zx+2,zy-2+bob,1.4,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(200,210,230,0.6)'; ctx.font='6px "IBM Plex Mono"'; ctx.textAlign='center'; ctx.fillText(a.callsign.slice(0,5), zx, zy+13);
     });
-    ctx.fillStyle='rgba(143,179,90,0.9)'; ctx.font='9px "IBM Plex Mono"';
-    ctx.fillText('SALA DE RELAXE // ROTACAO', rx+rw/2, ry+rh+12);
+    ctx.fillStyle='rgba(143,179,90,0.9)'; ctx.font='9px "IBM Plex Mono"'; ctx.textAlign='center';
+    ctx.fillText('ROTACAO DE TURNO // os bots conhecem-se e descansem', rx+rw/2, ry+rh+11);
     ctx.textAlign='left';
     ctx.restore();
   }
@@ -1127,6 +1145,13 @@ state.rooms.find(r=>r.id==='r2')._planT=0;
 // ponte WhatsApp: poll decisions do servidor (se online)
 setInterval(()=>{ fetch('/api/decisions').then(r=>r.json()).then(arr=>{ (arr||[]).forEach(d=>{ if(d.action==='approve') approve(d.id); else if(d.action==='reject') reject(d.id); }); }).catch(()=>{}); }, 2500); // os agentes comecam a trabalhar ao abrir (sem clicar Ativar)
 const _ci=document.getElementById('clip-input'); if(_ci)_ci.addEventListener('change',uploadClip);
+document.getElementById('btn-zero').addEventListener('click',()=>{
+  if(!confirm('Zerar TODO o capital/ledger? Isto apaga os registos reais.')) return;
+  fetch('/api/ledger/reset',{method:'POST'}).then(r=>r.json()).then(b=>{
+    log('Capital zerado. Controlo limpo.','');
+    renderLedger();
+  }).catch(()=>{ log('Erro a zerar (servidor local?).',''); });
+});
 document.getElementById('btn-entry').addEventListener('click',()=>{
   const kind=document.getElementById('r-kind').value, amount=parseFloat(document.getElementById('r-amt').value||0);
   const cur=document.getElementById('r-cur').value, origin=document.getElementById('r-origin').value||'Outro', agent=document.getElementById('r-agent').value||'-';

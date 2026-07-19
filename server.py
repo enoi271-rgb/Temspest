@@ -255,6 +255,17 @@ def get_ledger():
     return jsonify([dict(r) for r in rows])
 
 
+@app.route("/api/ledger/reset", methods=["POST"])
+def reset_ledger():
+    # ZERA o capital (só o utilizador clica no botão; nao e usado por testes do agente)
+    with _lock:
+        cx = db()
+        cx.execute("DELETE FROM ledger")
+        cx.execute("DELETE FROM snapshots")
+        cx.commit(); cx.close()
+    return jsonify({"ok": True, "capital": 0.0})
+
+
 @app.route("/api/balance", methods=["GET"])
 def get_balance():
     return jsonify(balance())
