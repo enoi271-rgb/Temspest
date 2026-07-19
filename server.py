@@ -326,6 +326,15 @@ setInterval(()=>location.reload(),7000);
     return Response(html, mimetype="text/html")
 
 
+@app.route("/station")
+def station_page():
+    # serve o simulador completo (com backend ativo: upload, ideia, ganhos, analytics)
+    try:
+        with open(os.path.join(BASE, "index.html"), encoding="utf-8") as f:
+            return Response(f.read(), mimetype="text/html")
+    except Exception as e:
+        return Response("<h1>index.html nao encontrado: %s</h1>" % e, mimetype="text/html")
+
 # ---------- VIEWS REAIS (YouTube / TikTok / Instagram) ----------
 import urllib.request, json as _json
 
