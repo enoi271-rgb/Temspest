@@ -453,6 +453,17 @@ def views_manual():
                 int(d.get("views",0)), int(d.get("likes",0)), d.get("url",""), d.get("hashtags",""))
     return jsonify({"ok": True})
 
+@app.route("/api/views/reset", methods=["POST"])
+def views_reset():
+    # ZERA as views (só o utilizador clica no botão; nao e usado por testes do agente)
+    with _lock:
+        cx = db()
+        cx.execute("DELETE FROM platform_views")
+        cx.execute("DELETE FROM hashtag_stats")
+        cx.commit(); cx.close()
+    return jsonify({"ok": True, "total_views": 0})
+
+
 @app.route("/api/ig/sync", methods=["POST"])
 def ig_sync():
     if not IG_TOKEN or not IG_USER_ID:

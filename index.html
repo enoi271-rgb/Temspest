@@ -296,6 +296,8 @@
           <a href="http://192.168.1.71:5050/analytics" target="_blank" style="color:var(--amber);">Abrir p&aacute;gina de Analytics (telem&oacute;vel/Mac)</a><br>
           Sincroniza Instagram/TikTok/YouTube para contar views por plataforma, top v&iacute;deos e hashtags que atraem.
         </div>
+        <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;">As views entram SÓ por ti (manual ou sincronização real). O simulador não inventa views.</div>
+        <button class="btn ghost" id="btn-views-reset" style="font-size:13px;padding:3px 10px;width:100%;margin-top:4px;color:#c04a34;border-color:#5a2a24;">Limpar views (zerar tudo)</button>
       </div>
     </div>
   </div>
@@ -1145,6 +1147,13 @@ state.rooms.find(r=>r.id==='r2')._planT=0;
 // ponte WhatsApp: poll decisions do servidor (se online)
 setInterval(()=>{ fetch('/api/decisions').then(r=>r.json()).then(arr=>{ (arr||[]).forEach(d=>{ if(d.action==='approve') approve(d.id); else if(d.action==='reject') reject(d.id); }); }).catch(()=>{}); }, 2500); // os agentes comecam a trabalhar ao abrir (sem clicar Ativar)
 const _ci=document.getElementById('clip-input'); if(_ci)_ci.addEventListener('change',uploadClip);
+document.getElementById('btn-views-reset').addEventListener('click',()=>{
+  if(!confirm('Limpar TODAS as views/hashtags? Isto apaga os dados reais que carregaste.')) return;
+  fetch('/api/views/reset',{method:'POST'}).then(r=>r.json()).then(b=>{
+    log('Views zeradas. Controlo limpo.','');
+    if(typeof renderMaster==='function') renderMaster();
+  }).catch(()=>{ log('Erro a limpar views (servidor local?).',''); });
+});
 document.getElementById('btn-zero').addEventListener('click',()=>{
   if(!confirm('Zerar TODO o capital/ledger? Isto apaga os registos reais.')) return;
   fetch('/api/ledger/reset',{method:'POST'}).then(r=>r.json()).then(b=>{
