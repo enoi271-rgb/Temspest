@@ -181,19 +181,23 @@
   </div>
 
   <div class="panel">
-    <div class="panel-head"><span class="panel-num">DOC</span><span class="display panel-title">Planos de Negocio</span></div>
+    <div class="panel-head"><span class="panel-num">IDEIA</span><span class="display panel-title">Tab de Ideias → Documento</span></div>
     <div style="font-size:9px;color:var(--ink-faint);line-height:1.5;">
-      <b style="color:var(--amber)">Carregar PDF / Word</b> (os agentes leem e usam como base):
-      <input id="docfile" type="file" accept=".pdf,.doc,.docx,.txt,.md" style="font-size:9px;width:100%;margin:4px 0;color:var(--ink-dim);">
-      <button onclick="upDoc()" style="font-size:9px;padding:4px 8px;background:#4d5f37;color:#eef4e2;border:1px solid var(--green);cursor:pointer;border-radius:3px;">Enviar ficheiro</button>
-      <div id="docmsg" style="color:var(--green);min-height:12px;"></div>
-      <b style="color:var(--amber)">Tua ideia (breve):</b>
-      <textarea id="idea" placeholder="Ex: canal de warzone para Angola com patrocinios..." style="font-size:9px;width:100%;height:38px;margin:4px 0;background:#12150f;color:var(--ink);border:1px solid #3d4530;border-radius:3px;"></textarea>
-      <button onclick="sendIdea()" style="font-size:9px;padding:4px 8px;background:#4d5f37;color:#eef4e2;border:1px solid var(--green);cursor:pointer;border-radius:3px;">Gerar plano (15 anos exp.)</button>
+      <b style="color:var(--amber)">Escreve a tua ideia</b> — o agente STRATEGIST gera o documento completo e guarda-o na pasta <b style="color:var(--green)">estacao/ideias_negocio/</b> (ficheiro real no teu disco):
+      <textarea id="idea" placeholder="Ex: canal de warzone para Angola com patrocinios de marcas locais..." style="font-size:9px;width:100%;height:50px;margin:4px 0;background:#12150f;color:var(--ink);border:1px solid #3d4530;border-radius:3px;"></textarea>
+      <button onclick="sendIdea()" style="font-size:9px;padding:4px 8px;background:#4d5f37;color:#eef4e2;border:1px solid var(--green);cursor:pointer;border-radius:3px;">Gerar documento → pasta ideias_negocio</button>
+      <div id="docmsg" style="color:var(--green);min-height:14px;margin-top:4px;"></div>
+      <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;">Os documentos gerados alimentam tambem a <b style="color:var(--amber)">Sala de Negocios</b> (os agentes vao buscar la a informacao).</div>
     </div>
-    <div id="plans" style="font-size:9px;color:var(--ink-faint);margin-top:6px;max-height:180px;overflow:auto;"></div>
-    <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;border-top:1px solid #2a2f24;padding-top:6px;">Ficheiros completos em <b>negocios/</b>:<br>
-      <span style="color:var(--amber)">00_resumo_executivo.md · 01_analise_mercado.md · 02_produto_servico.md · 03_modelo_receita.csv · 04_kpis.json · 05_roadmap.md · 06_riscos.txt · 07_apresentacao.md</span></div>
+    <div id="plans" style="font-size:9px;color:var(--ink-faint);margin-top:6px;max-height:160px;overflow:auto;"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><span class="panel-num">EST</span><span class="display panel-title">Estacao — Pastas Locais</span></div>
+    <div style="font-size:9px;color:var(--ink-faint);line-height:1.45;">
+      Cada sala tem a sua pasta no disco (onde os agentes vao buscar informacao). A tua ideia gerada vai para <b style="color:var(--green)">ideias_negocio/</b>.
+    </div>
+    <div id="estacao" style="font-size:9px;color:var(--ink-dim);margin-top:6px;max-height:200px;overflow:auto;"></div>
+    <button onclick="renderEstacao()" style="font-size:9px;padding:3px 8px;background:#2a2f24;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;margin-top:4px;">Atualizar pastas</button>
   </div>
   <div class="panel">
     <div class="panel-head"><span class="panel-num">€</span><span class="display panel-title">Resultados Reais</span></div>
@@ -827,12 +831,36 @@ async function upDoc(){
 }
 function sendIdea(){
   const t=document.getElementById('idea').value.trim(); if(!t){alert('Escreve a tua ideia.');return;}
-  const docs=loadDocs(); const ctx=docs.map(d=>d.texto).join('\n');
-  const g=genPlanJS(t, ctx);
-  const plans=loadPlans(); plans.unshift({idea:t, autor:g.autor, meta:g.meta, prazo:g.prazo, plano:g.plano, ts:new Date().toLocaleString('pt')});
-  savePlans(plans);
-  document.getElementById('idea').value=''; renderPlans();
-  log('Sala de Negocios gerou plano ('+g.autor+') — meta '+g.meta+' USD / '+g.prazo+' meses.','e');
+  // chama o backend que gera o documento e escreve na pasta estacao/ideias_negocio/
+  document.getElementById('docmsg').textContent='A gerar documento...';
+  fetch('/api/idea',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:t})}).then(r=>r.json()).then(j=>{
+    if(j.ok){
+      document.getElementById('docmsg').textContent='Documento escrito: estacao/ideias_negocio/'+j.file;
+      document.getElementById('idea').value='';
+      renderPlans(); renderEstacao();
+      log('Ideia gerada ('+j.autor+') — documento em estacao/ideias_negocio/'+j.file,'e');
+    } else { document.getElementById('docmsg').textContent='Erro: '+(j.reason||''); }
+  }).catch(e=>{ document.getElementById('docmsg').textContent='Backend indisponivel (servidor local).'; });
+}
+function renderEstacao(){
+  fetch('/api/estacao').then(r=>r.json()).then(e=>{
+    let h='';
+    for(const k of ['sala_criacao','sala_edicao','sala_negocios','sala_financeira']){
+      const s=e[k]; if(!s) continue;
+      h+='<div style="margin:4px 0;padding:4px 6px;border-left:2px solid var(--green);background:#12150f;">';
+      h+='<b style="color:var(--green)">'+s.num+' · '+s.name+'</b> <span style="color:var(--ink-faint)">('+s.files.length+' fich.)</span><br>';
+      h+=s.files.slice(0,4).map(f=>'· '+f.name).join('<br>')||'<span style="color:var(--ink-faint)">vazia</span>';
+      if(s.files.length>4) h+='<br>· ...';
+      h+='</div>';
+    }
+    const ide=e.ideias_negocio||[];
+    h+='<div style="margin:4px 0;padding:4px 6px;border-left:2px solid var(--amber);background:#12150f;">';
+    h+='<b style="color:var(--amber)">IDEIAS DE NEGOCIO</b> <span style="color:var(--ink-faint)">('+ide.length+' doc.)</span><br>';
+    h+=ide.slice(0,6).map(f=>'· '+f.name).join('<br>')||'<span style="color:var(--ink-faint)">sem documentos ainda</span>';
+    if(ide.length>6) h+='<br>· ...';
+    h+='</div>';
+    document.getElementById('estacao').innerHTML=h;
+  }).catch(()=>{ document.getElementById('estacao').innerHTML='<span style="color:var(--ink-faint)">Backend indisponivel (precisa do servidor local).</span>'; });
 }
 document.getElementById('btn-approve-all').addEventListener('click',()=>{
   state.pending.slice().forEach(p=>{ if(!p.plan) approve(p.id); });
@@ -852,7 +880,7 @@ state.rooms.forEach(r=>recruitRoom(r,2));
 renderHUD();renderRooms();renderCore();renderMaster();
 log('TEMSPEST STATION online. Agentes a trabalhar rumo aos $2B.','');
 drawStation();
-renderPending();renderPlans();
+renderPending();renderPlans();renderEstacao();
 state.rooms.find(r=>r.id==='r2')._planT=0;
 // arranca automaticamente
 

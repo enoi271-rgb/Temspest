@@ -38,6 +38,39 @@ from flask import Flask, request, jsonify, Response
 BASE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE, "finance.db")
 
+# === PASTAS DA ESTACAO (filesystem local, sem web upload) ===
+ESTACAO = os.path.join(BASE, "estacao")
+SALAS = {
+    "sala_criacao":   {"num": "R1", "name": "SALA DE CRIACAO",   "path": os.path.join(ESTACAO, "sala_criacao")},
+    "sala_edicao":    {"num": "R2", "name": "SALA DE EDICAO",    "path": os.path.join(ESTACAO, "sala_edicao")},
+    "sala_negocios":  {"num": "R3", "name": "SALA DE NEGOCIOS",  "path": os.path.join(ESTACAO, "sala_negocios")},
+    "sala_financeira":{"num": "R4", "name": "GESTORES FINANCEIROS", "path": os.path.join(ESTACAO, "sala_financeira")},
+}
+IDEIAS_DIR = os.path.join(ESTACAO, "ideias_negocio")
+
+def ensure_estacao():
+    os.makedirs(IDEIAS_DIR, exist_ok=True)
+    for s in SALAS.values():
+        os.makedirs(s["path"], exist_ok=True)
+    # README em cada sala a explicar o que vai la
+    hints = {
+        "sala_criacao":   "Aqui a Sala de Criacao vai buscar referencias de clips/shorts/hashtags. Coloca aqui: estilos, exemplos, briefings de edicao.",
+        "sala_edicao":    "Aqui a Sala de Edicao vai buscar referencias de cor, som, thumbnails. Coloca aqui: LUTs, audio refs, estilos de thumb.",
+        "sala_negocios":  "A Sala de Negocios vai buscar AQUI toda a informacao necessaria (briefings, concorrencia, numeros). Os documentos de ideia gerados tambem alimentam esta pasta.",
+        "sala_financeira":"A Sala de Gestores Financeiros vai buscar aqui relatorios de capital/contabilidade. O backend escreve aqui os resumos de balanco.",
+    }
+    for key, s in SALAS.items():
+        readme = os.path.join(s["path"], "README.txt")
+        if not os.path.exists(readme):
+            with open(readme, "w", encoding="utf-8") as f:
+                f.write(hints.get(key, ""))
+ensure_estacao()
+
+def slugify(txt):
+    import re
+    t = re.sub(r'[^a-z0-9]+', '-', txt.lower()).strip('-')
+    return (t or "ideia")[:60]
+
 WHATSAPP_NUMBER = os.environ.get("TTEMSPEST_WHATSAPP", "244XXXxxxxxxx")
 KZ_PER_USD = float(os.environ.get("KZ_PER_USD", "850"))  # 1 USD em Kwanza
 IG_TOKEN = os.environ.get("IG_TOKEN", "")
@@ -549,7 +582,43 @@ def idea():
         cx.execute("INSERT INTO business_plans(idea,plano,autor,meta_receita,prazo_meses) VALUES(?,?,?,?,?)",
                    (idea_txt, plano, autor, meta, prazo))
         cx.commit(); cx.close()
-    return jsonify({"ok": True, "autor": autor, "meta_usd": meta, "prazo": prazo, "plano": plano})
+    # === ESCREVE FICHEIRO REAL NAS PASTAS (sem web upload) ===
+    import datetime as _dt
+    ts = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    slug = slugify(idea_txt)
+    fname = "%s__%s.md" % (ts, slug)
+    # 1) documento na pasta de ideias de negocio
+    ideia_path = os.path.join(IDEIAS_DIR, fname)
+    with open(ideia_path, "w", encoding="utf-8") as f:
+        f.write("# IDEIA DE NEGOCIO — %s\n\n" % idea_txt.strip())
+        f.write("> Gerado pela Sala de Negocios (TTEMSPESTT) — %s\n\n" % ts)
+        f.write(plano)
+        f.write("\n\n---\n*Documento produzido automaticamente. Pasta: estacao/ideias_negocio/%s*\n" % fname)
+    # 2) contexto tambem vai para a sala de negocios (agentes vao buscar la)
+    neg_path = os.path.join(SALAS["sala_negocios"]["path"], fname)
+    with open(neg_path, "w", encoding="utf-8") as f:
+        f.write("# CONTEXTO DE IDEIA — %s\n\n" % idea_txt.strip())
+        f.write(plano)
+    return jsonify({"ok": True, "autor": autor, "meta_usd": meta, "prazo": prazo,
+                    "file": fname, "path": ideia_path})
+
+@app.route("/api/estacao", methods=["GET"])
+def estacao():
+    out = {}
+    for key, s in SALAS.items():
+        files = []
+        for fn in sorted(os.listdir(s["path"])):
+            fp = os.path.join(s["path"], fn)
+            if os.path.isfile(fp):
+                files.append({"name": fn, "size": os.path.getsize(fp)})
+        out[key] = {"num": s["num"], "name": s["name"], "files": files}
+    ideias = []
+    for fn in sorted(os.listdir(IDEIAS_DIR)):
+        fp = os.path.join(IDEIAS_DIR, fn)
+        if os.path.isfile(fp):
+            ideias.append({"name": fn, "size": os.path.getsize(fp)})
+    out["ideias_negocio"] = ideias
+    return jsonify(out)
 
 @app.route("/api/business", methods=["GET"])
 def business():
