@@ -960,6 +960,33 @@ def crm_improve():
         f.write("# PLANO DE MELHORIA\n\n> %s\n\n%s" % (ts, melhoria))
     return jsonify({"ok": True, "melhoria": mfname})
 
+
+# ---------- ABRIR PASTA NO FINDER (macOS local) ----------
+@app.route("/api/open-folder", methods=["POST"])
+def open_folder():
+    d = request.get_json(force=True) or {}
+    key = (d.get("key") or "secretaria").strip()
+    # mapa seguro: so pastas dentro da estacao
+    mapa = {
+        "secretaria": ESTACAO,
+        "sala_criacao": SALAS["sala_criacao"]["path"],
+        "sala_edicao": SALAS["sala_edicao"]["path"],
+        "sala_negocios": SALAS["sala_negocios"]["path"],
+        "sala_financeira": SALAS["sala_financeira"]["path"],
+        "sala_publicidade": SALAS["sala_publicidade"]["path"],
+        "sala_web": SALAS["sala_web"]["path"],
+        "sala_crm": SALAS["sala_crm"]["path"],
+        "ideias_negocio": IDEIAS_DIR,
+    }
+    path = mapa.get(key, ESTACAO)
+    try:
+        import subprocess as _sp
+        _sp.Popen(["open", path])
+        return jsonify({"ok": True, "path": path})
+    except Exception as e:
+        return jsonify({"ok": False, "reason": str(e)}), 500
+
+
 def gen_melhoria(rede, texto):
     L = []
     L.append("## ANALISE")

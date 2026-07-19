@@ -202,6 +202,18 @@
     </div>
     <div id="estacao" style="font-size:9px;color:var(--ink-dim);margin-top:6px;max-height:200px;overflow:auto;"></div>
     <button onclick="renderEstacao()" style="font-size:9px;padding:3px 8px;background:#2a2f24;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;margin-top:4px;">Atualizar pastas</button>
+    <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;">Abrir no Finder (Mac local):</div>
+    <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;">
+      <button class="btn-folder" data-key="secretaria" style="font-size:9px;padding:2px 7px;background:#2a2f24;color:var(--green);border:1px solid var(--green);cursor:pointer;border-radius:3px;">📂 Secretaria</button>
+      <button class="btn-folder" data-key="sala_criacao" style="font-size:9px;padding:2px 7px;background:#1a2014;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;">R1</button>
+      <button class="btn-folder" data-key="sala_edicao" style="font-size:9px;padding:2px 7px;background:#1a2014;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;">R2</button>
+      <button class="btn-folder" data-key="sala_negocios" style="font-size:9px;padding:2px 7px;background:#1a2014;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;">R3</button>
+      <button class="btn-folder" data-key="sala_financeira" style="font-size:9px;padding:2px 7px;background:#1a2014;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;">R4</button>
+      <button class="btn-folder" data-key="sala_publicidade" style="font-size:9px;padding:2px 7px;background:#1a2014;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;">R5</button>
+      <button class="btn-folder" data-key="sala_web" style="font-size:9px;padding:2px 7px;background:#1a2014;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;">R6</button>
+      <button class="btn-folder" data-key="sala_crm" style="font-size:9px;padding:2px 7px;background:#1a2014;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;">R7</button>
+      <button class="btn-folder" data-key="ideias_negocio" style="font-size:9px;padding:2px 7px;background:#1a2014;color:var(--amber);border:1px solid #5a4a24;cursor:pointer;border-radius:3px;">💡 Ideias</button>
+    </div>
   </div>
   <div class="panel">
     <div class="panel-head"><span class="panel-num">PUB</span><span class="display panel-title">Estudio Publicitario (R5)</span></div>
@@ -1147,6 +1159,14 @@ state.rooms.find(r=>r.id==='r2')._planT=0;
 // ponte WhatsApp: poll decisions do servidor (se online)
 setInterval(()=>{ fetch('/api/decisions').then(r=>r.json()).then(arr=>{ (arr||[]).forEach(d=>{ if(d.action==='approve') approve(d.id); else if(d.action==='reject') reject(d.id); }); }).catch(()=>{}); }, 2500); // os agentes comecam a trabalhar ao abrir (sem clicar Ativar)
 const _ci=document.getElementById('clip-input'); if(_ci)_ci.addEventListener('change',uploadClip);
+document.querySelectorAll('.btn-folder').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const key=b.dataset.key;
+    fetch('/api/open-folder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})}).then(r=>r.json()).then(j=>{
+      if(j.ok) log('Abriu pasta no Finder: '+j.path,'e'); else log('Nao consegui abrir (so funciona no Mac local).','');
+    }).catch(()=>{ log('Erro a abrir pasta (servidor local?).',''); });
+  });
+});
 document.getElementById('btn-views-reset').addEventListener('click',()=>{
   if(!confirm('Limpar TODAS as views/hashtags? Isto apaga os dados reais que carregaste.')) return;
   fetch('/api/views/reset',{method:'POST'}).then(r=>r.json()).then(b=>{
