@@ -181,13 +181,17 @@
   </div>
 
   <div class="panel">
-    <div class="panel-head"><span class="panel-num">IDEIA</span><span class="display panel-title">Tab de Ideias → Documento</span></div>
+    <div class="panel-head"><span class="panel-num">IDEIA</span><span class="display panel-title">Sala de Negócios → Ideias</span></div>
     <div style="font-size:9px;color:var(--ink-faint);line-height:1.5;">
-      <b style="color:var(--amber)">Escreve a tua ideia</b> — o agente STRATEGIST gera o documento completo e guarda-o na pasta <b style="color:var(--green)">estacao/ideias_negocio/</b> (ficheiro real no teu disco):
-      <textarea id="idea" placeholder="Ex: canal de warzone para Angola com patrocinios de marcas locais..." style="font-size:9px;width:100%;height:50px;margin:4px 0;background:#12150f;color:var(--ink);border:1px solid #3d4530;border-radius:3px;"></textarea>
-      <button onclick="sendIdea()" style="font-size:9px;padding:4px 8px;background:#4d5f37;color:#eef4e2;border:1px solid var(--green);cursor:pointer;border-radius:3px;">Gerar documento → pasta ideias_negocio</button>
-      <div id="docmsg" style="color:var(--green);min-height:14px;margin-top:4px;"></div>
-      <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;">Os documentos gerados alimentam tambem a <b style="color:var(--amber)">Sala de Negocios</b> (os agentes vao buscar la a informacao).</div>
+      <button id="btn-idea-open" onclick="abrirIdeia()" style="font-size:10px;padding:5px 10px;background:#4d5f37;color:#eef4e2;border:1px solid var(--green);cursor:pointer;border-radius:3px;">✎ Escrever ideia</button>
+      <div id="idea-box" style="display:none;margin-top:6px;">
+        <b style="color:var(--amber)">Escreve a tua ideia</b> — o agente analisa e gera o documento na pasta <b style="color:var(--green)">estacao/ideias_negocio/</b>:
+        <textarea id="idea" placeholder="Ex: canal de warzone para Angola com patrocinios de marcas locais..." style="font-size:9px;width:100%;height:50px;margin:4px 0;background:#12150f;color:var(--ink);border:1px solid #3d4530;border-radius:3px;"></textarea>
+        <button onclick="sendIdea()" style="font-size:9px;padding:4px 8px;background:#4d5f37;color:#eef4e2;border:1px solid var(--green);cursor:pointer;border-radius:3px;">Gerar documento (após análise)</button>
+        <button onclick="fecharIdeia()" style="font-size:9px;padding:4px 8px;background:#2a2f24;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;">Fechar</button>
+        <div id="docmsg" style="color:var(--green);min-height:14px;margin-top:4px;"></div>
+        <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;">Os documentos gerados alimentam tambem a <b style="color:var(--amber)">Sala de Negocios</b> (os agentes vao buscar la a informacao).</div>
+      </div>
     </div>
     <div id="plans" style="font-size:9px;color:var(--ink-faint);margin-top:6px;max-height:160px;overflow:auto;"></div>
   </div>
@@ -225,6 +229,24 @@
       <button onclick="criarGuia()" style="font-size:9px;padding:4px 8px;background:#2a5f8f;color:#e6eefb;border:1px solid #5aa0e0;cursor:pointer;border-radius:3px;">Gerar guia + checklist</button>
       <div style="font-size:9px;color:var(--ink-faint);margin-top:4px;">Ficheiros reais em <b>estacao/sala_web/</b> (sites/ · guias/ · contas/ · presenca/).</div>
       <div id="web-list" style="font-size:9px;color:var(--ink-dim);margin-top:6px;max-height:120px;overflow:auto;"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><span class="panel-num">CRM</span><span class="display panel-title">Atendimento & Clientes (R7)</span></div>
+    <div style="font-size:9px;color:var(--ink-faint);line-height:1.5;">
+      <b style="color:var(--amber)">Registar interação / reclamação</b> (todas as redes):
+      <select id="crm-rede" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:3px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+        <option value="instagram">Instagram</option><option value="tiktok">TikTok</option><option value="facebook">Facebook</option><option value="youtube">YouTube</option><option value="x">X</option>
+      </select>
+      <select id="crm-tipo" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:3px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+        <option value="interacao">Interação</option><option value="reclamacao">Reclamação / Crítica</option>
+      </select>
+      <input id="crm-cliente" placeholder="Nome do cliente/seguidor" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:3px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
+      <textarea id="crm-texto" placeholder="Cola a mensagem / reclamação do cliente..." style="font-size:9px;width:100%;height:40px;margin:3px 0;background:#12150f;color:var(--ink);border:1px solid #3d4530;border-radius:3px;"></textarea>
+      <button onclick="registarCRM()" style="font-size:9px;padding:4px 8px;background:#8f6a2a;color:#fbf3e6;border:1px solid #d6a44a;cursor:pointer;border-radius:3px;">Registar + gerar melhoria</button>
+      <div id="crmmsg" style="color:var(--green);min-height:12px;margin-top:4px;"></div>
+      <div style="font-size:9px;color:var(--ink-faint);margin-top:4px;">Reclamações geram <b>plano de melhoria</b> automático (pasta melhorias/). Ficheiros em <b>estacao/sala_crm/</b>.</div>
+      <div id="crm-list" style="font-size:9px;color:var(--ink-dim);margin-top:6px;max-height:100px;overflow:auto;"></div>
     </div>
   </div>
   <div class="panel">
@@ -332,6 +354,14 @@ const ROOM_DEFS=[
       SOCIAL_MGR:['a gerir IG/TikTok/FB','a agendar posts','a responder DMs'],
       BRAND_STRAT:['a definir presenca','a alinhar bio','a cruzar redes'],
       AUTOMATOR:['a ligar Meta Suite','a automatizar publicacao','a criar checklists']
+    } },
+  { id:'r7', num:'R7', name:'ATENDIMENTO & CLIENTES', func:'Gerir interacoes em todas as redes · reclamações · críticas · melhorar a partir do feedback', color:'230,170,90',
+    roles:['SUPPORT','SENTIMENT','CRISIS','INSIGHT'],
+    tasks:{
+      SUPPORT:['a responder DMs','a triar mensagens','a resolver duvidas'],
+      SENTIMENT:['a medir sentimento','a classificar feedback','a fechar ciclo'],
+      CRISIS:['a gerir reclamacao','a acalmar cliente','a escalar gravidade'],
+      INSIGHT:['a extrair melhoria','a propor mudanca','a alimentar R3/R6']
     } }
 ];
 
@@ -551,14 +581,15 @@ function checkMilestones(){
 // ===== STATION MAP (canvas) — hub E central + 3 salas radiais + pontes =====
 const cv=document.getElementById('station');const ctx=cv.getContext('2d');
 // posicoes: E no centro; S1 esquerda, S2 cima-direita, S3 baixo-direita
-const HUB={x:cv.width/2, y:cv.height/2, r:46};
+const HUB={x:cv.width/2, y:cv.height/2, r:34};
 const SALA_POS=[
-  {x:20, y:24, w:340, h:120},                          // R1 cima-esquerda
-  {x:cv.width/2-170, y:14, w:340, h:108},              // R2 cima-centro
-  {x:cv.width-360, y:24, w:340, h:120},                // R3 cima-direita
-  {x:20, y:cv.height-150, w:340, h:128},               // R4 baixo-esquerda
-  {x:cv.width/2-170, y:cv.height-132, w:340, h:116},   // R5 baixo-centro
-  {x:cv.width-360, y:cv.height-150, w:340, h:128}      // R6 baixo-direita (Web & Presenca)
+  {x:14, y:14, w:268, h:104},                          // R1
+  {x:cv.width/4+8, y:14, w:268, h:104},                 // R2
+  {x:cv.width/2+8, y:14, w:268, h:104},                // R3
+  {x:cv.width-282, y:14, w:268, h:104},                // R4
+  {x:44, y:cv.height-124, w:330, h:112},               // R5
+  {x:cv.width/2-165, y:cv.height-124, w:330, h:112},   // R6
+  {x:cv.width-374, y:cv.height-124, w:330, h:112}      // R7 (Atendimento & Clientes)
 ];
 function roomRect(i){return SALA_POS[i];}
 // ===== DESENHO ESPECIFICO POR SALA =====
@@ -875,13 +906,15 @@ async function upDoc(){
     renderPlans();
   }catch(e){ document.getElementById('docmsg').textContent='Erro: '+e.message; }
 }
+function abrirIdeia(){document.getElementById('idea-box').style.display='block';document.getElementById('btn-idea-open').style.display='none';document.getElementById('idea').focus();}
+function fecharIdeia(){document.getElementById('idea-box').style.display='none';document.getElementById('btn-idea-open').style.display='inline-block';}
 function sendIdea(){
   const t=document.getElementById('idea').value.trim(); if(!t){alert('Escreve a tua ideia.');return;}
-  // chama o backend que gera o documento e escreve na pasta estacao/ideias_negocio/
-  document.getElementById('docmsg').textContent='A gerar documento...';
+  // chama o backend que analisa e gera o documento e escreve na pasta estacao/ideias_negocio/
+  document.getElementById('docmsg').textContent='A analisar e gerar documento...';
   fetch('/api/idea',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:t})}).then(r=>r.json()).then(j=>{
     if(j.ok){
-      document.getElementById('docmsg').textContent='Documento escrito: estacao/ideias_negocio/'+j.file;
+      document.getElementById('docmsg').textContent='Analise completa. Documento escrito: estacao/ideias_negocio/'+j.file;
       document.getElementById('idea').value='';
       renderPlans(); renderEstacao();
       log('Ideia gerada ('+j.autor+') — documento em estacao/ideias_negocio/'+j.file,'e');
@@ -967,6 +1000,34 @@ function renderWeb(){
     document.getElementById('web-list').innerHTML=h;
   }).catch(()=>{});
 }
+function registarCRM(){
+  const rede=document.getElementById('crm-rede').value;
+  const tipo=document.getElementById('crm-tipo').value;
+  const cliente=document.getElementById('crm-cliente').value.trim();
+  const texto=document.getElementById('crm-texto').value.trim();
+  if(!texto){alert('Cola a mensagem/reclamacao do cliente.');return;}
+  document.getElementById('crmmsg').textContent= tipo==='reclamacao' ? 'A registar + gerar plano de melhoria...' : 'A registar interacao...';
+  fetch('/api/crm/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rede:rede,tipo:tipo,cliente:cliente,texto:texto})}).then(r=>r.json()).then(j=>{
+    if(j.ok){
+      let m='Registado ('+j.tipo+') em estacao/sala_crm/.';
+      if(j.melhoria) m+=' Plano de melhoria: melhorias/'+j.melhoria;
+      document.getElementById('crmmsg').textContent=m;
+      document.getElementById('crm-texto').value=''; document.getElementById('crm-cliente').value='';
+      renderCRM();
+      log('R7 registou '+j.tipo+' ('+rede+')'+(j.melhoria?' + melhoria':''),'e');
+    } else { document.getElementById('crmmsg').textContent='Erro: '+(j.reason||''); }
+  }).catch(()=>{ document.getElementById('crmmsg').textContent='Backend indisponivel (servidor local).'; });
+}
+function renderCRM(){
+  fetch('/api/estacao').then(r=>r.json()).then(e=>{
+    const c=e.sala_crm; if(!c) return;
+    let h='<div style="border-left:2px solid #d6a44a;padding:4px 6px;background:#12150f;margin-top:4px;">';
+    h+='<b style="color:#d6a44a">R7 · ATENDIMENTO & CLIENTES</b> <span style="color:var(--ink-faint)">('+c.files.length+' fich.)</span><br>';
+    h+=c.files.slice(0,8).map(f=>'· '+f.name).join('<br>')||'<span style="color:var(--ink-faint)">sem registos ainda</span>';
+    h+='</div>';
+    document.getElementById('crm-list').innerHTML=h;
+  }).catch(()=>{});
+}
 document.getElementById('btn-approve-all').addEventListener('click',()=>{
   state.pending.slice().forEach(p=>{ if(!p.plan) approve(p.id); });
   state.plans.forEach(d=>{ if(d.status==='pendente') d.status='aprovado'; });
@@ -985,7 +1046,7 @@ state.rooms.forEach(r=>recruitRoom(r,2));
 renderHUD();renderRooms();renderCore();renderMaster();
 log('TEMSPEST STATION online. Agentes a trabalhar rumo aos $2B.','');
 drawStation();
-renderPending();renderPlans();renderEstacao();renderPub();renderWeb();
+renderPending();renderPlans();renderEstacao();renderPub();renderWeb();renderCRM();
 state.rooms.find(r=>r.id==='r2')._planT=0;
 // arranca automaticamente
 

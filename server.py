@@ -47,6 +47,7 @@ SALAS = {
     "sala_financeira":{"num": "R4", "name": "GESTORES FINANCEIROS", "path": os.path.join(ESTACAO, "sala_financeira")},
     "sala_publicidade":{"num": "R5", "name": "ESTUDIO PUBLICITARIO", "path": os.path.join(ESTACAO, "sala_publicidade")},
     "sala_web":       {"num": "R6", "name": "WEB & PRESENCA ONLINE", "path": os.path.join(ESTACAO, "sala_web")},
+    "sala_crm":       {"num": "R7", "name": "ATENDIMENTO & CLIENTES", "path": os.path.join(ESTACAO, "sala_crm")},
 }
 IDEIAS_DIR = os.path.join(ESTACAO, "ideias_negocio")
 
@@ -62,6 +63,10 @@ WEB_SITES   = os.path.join(SALAS["sala_web"]["path"], "sites")
 WEB_GUIAS   = os.path.join(SALAS["sala_web"]["path"], "guias")
 WEB_CONTAS  = os.path.join(SALAS["sala_web"]["path"], "contas")
 WEB_PRESENCA= os.path.join(SALAS["sala_web"]["path"], "presenca")
+# subpastas da Sala Atendimento & Clientes (R7)
+CRM_IN   = os.path.join(SALAS["sala_crm"]["path"], "interacoes")
+CRM_RECL  = os.path.join(SALAS["sala_crm"]["path"], "reclamacoes")
+CRM_MELH  = os.path.join(SALAS["sala_crm"]["path"], "melhorias")
 
 def ensure_estacao():
     os.makedirs(IDEIAS_DIR, exist_ok=True)
@@ -74,6 +79,9 @@ def ensure_estacao():
     os.makedirs(WEB_GUIAS, exist_ok=True)
     os.makedirs(WEB_CONTAS, exist_ok=True)
     os.makedirs(WEB_PRESENCA, exist_ok=True)
+    os.makedirs(CRM_IN, exist_ok=True)
+    os.makedirs(CRM_RECL, exist_ok=True)
+    os.makedirs(CRM_MELH, exist_ok=True)
     for s in SALAS.values():
         os.makedirs(s["path"], exist_ok=True)
     # README em cada sala a explicar o que vai la
@@ -84,6 +92,7 @@ def ensure_estacao():
         "sala_financeira":"A Sala de Gestores Financeiros vai buscar aqui relatorios de capital/contabilidade. O backend escreve aqui os resumos de balanco.",
         "sala_publicidade":"Estudio Publicitario: briefings/ (pedidos de clientes) + publicidades/ (2 versoes geradas por cliente) + aprovacao_cliente/ (aguarda OK do cliente).",
         "sala_web":       "Web & Presenca Online: sites/ (websites gerados) + guias/ (como+onde fazer em cada rede) + contas/ (checklists de gestao de contas) + presenca/ (estrategia de presenca).",
+        "sala_crm":       "Atendimento & Clientes: interacoes/ (todas as redes: IG/TikTok/FB/YT/X) + reclamacoes/ (gestao de queixas) + melhorias/ (planos de melhoria a partir de criticas).",
     }
     for key, s in SALAS.items():
         readme = os.path.join(s["path"], "README.txt")
@@ -738,27 +747,41 @@ def gen_ad(cliente, pedido, v):
 
 def gen_site(nome, tipo):
     slug = slugify(nome)
+    redes = [
+        ("YouTube", "@TEMSPEST999", "https://www.youtube.com/@TEMSPEST999"),
+        ("TikTok", "@temspest", "https://www.tiktok.com/@temspest"),
+        ("Instagram", "@TTEMSPESTT", "https://instagram.com/TTEMSPESTT"),
+        ("Facebook", "@TTEMSPESTT", "https://facebook.com/TTEMSPESTT"),
+    ]
+    redes_html = "".join(
+        '<div class="card"><b>%s</b> %s — <a href="%s" style="color:#7c3aed">%s</a></div>' % (r[0], r[1], r[2], r[2])
+        for r in redes)
     html = """<!doctype html>
 <html lang="pt">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>%s — TEMSPEST</title>
+<title>%s — TTEMSPESTT</title>
 <style>body{margin:0;font-family:system-ui,sans-serif;background:#0b0e14;color:#e6e9ef}
-.hero{padding:60px 24px;text-align:center;background:linear-gradient(135deg,#1a1030,#0b0e14)}
-h1{font-size:2.4rem;letter-spacing:.1em}
+.hero{padding:64px 24px;text-align:center;background:linear-gradient(135deg,#1a1030,#0b0e14)}
+h1{font-size:2.6rem;letter-spacing:.12em;color:#fff}
+.tag{color:#a78bfa;font-size:.9rem;letter-spacing:.2em}
 .cta{display:inline-block;margin-top:18px;padding:12px 26px;background:#7c3aed;color:#fff;border-radius:8px;text-decoration:none}
 section{padding:32px 24px;max-width:900px;margin:0 auto}
 .card{background:#141925;border:1px solid #252b3b;border-radius:10px;padding:18px;margin:12px 0}
+h2{color:#c4b5fd}
 </style></head>
 <body>
-<header class="hero"><h1>%s</h1><p>Gestao completa por TTEMSPESTT — criado pela Sala R6 (Web & Presenca Online).</p>
-<a class="cta" href="#contacto">Fala connosco</a></header>
+<header class="hero"><h1>%s</h1><p class="tag">GHOST ANGOLANO · TTEMSPESTT</p>
+<p>Gestao completa por TTEMSPESTT — criado pela Sala R6 (Web & Presenca Online).</p>
+<a class="cta" href="#redes">Segue-nos</a></header>
 <section><h2>Servicos</h2>
 <div class="card">Criacao de websites e landing pages (esta pagina e gerada automaticamente).</div>
 <div class="card">Gestao de contas e presenca online: Instagram, TikTok, Facebook, YouTube, X.</div>
 <div class="card">Estrategia de crescimento e automacao de publicacao.</div></section>
-<section id="contacto"><h2>Contacto</h2><div class="card">WhatsApp / Instagram @TTEMSPESTT</div></section>
+<section id="redes"><h2>As nossas redes</h2>
+%s</section>
+<section id="contacto"><h2>Contacto</h2><div class="card">WhatsApp · Instagram @TTEMSPESTT · YouTube @TEMSPEST999</div></section>
 <footer style="text-align:center;padding:24px;color:#5b6478;font-size:12px">TTEMSPESTT · Ghost Angolano · %s</footer>
-</body></html>""" % (nome, nome, datetime.date.today().isoformat())
+</body></html>""" % (nome, nome, redes_html, datetime.date.today().isoformat())
     return html
 
 @app.route("/api/web/site", methods=["POST"])
@@ -852,6 +875,82 @@ def gen_conta_checklist(rede):
     L.append("- [ ] 3 posts agendados (Meta Suite / TikTok Studio)")
     L.append("- [ ] Analise semanal de alcance (pasta presenca/)")
     L.append("- [ ] Responder DMs em 24h")
+    return "\n".join(L)
+
+
+@app.route("/api/crm/add", methods=["POST"])
+def crm_add():
+    d = request.get_json(force=True) or {}
+    rede = (d.get("rede") or "instagram").strip().lower()
+    tipo = (d.get("tipo") or "interacao").strip().lower()  # interacao | reclamacao | critica
+    texto = (d.get("texto") or "").strip()
+    cliente = (d.get("cliente") or "seguidor").strip() or "seguidor"
+    if not texto:
+        return jsonify({"ok": False, "reason": "texto vazio"}), 400
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    slug = slugify(cliente)
+    # pasta destino
+    if tipo in ("reclamacao","critica"):
+        dest = CRM_RECL
+        cat = "RECLAMACAO/CRITICA"
+    else:
+        dest = CRM_IN
+        cat = "INTERACAO"
+    fname = "%s__%s__%s.md" % (ts, slug, tipo)
+    with open(os.path.join(dest, fname), "w", encoding="utf-8") as f:
+        f.write("# %s — %s\n\n" % (cat, cliente))
+        f.write("> R7 Atendimento & Clientes — %s\n\n" % ts)
+        f.write("REDE: %s\nCLIENTE: %s\nTIPO: %s\n\n" % (rede, cliente, tipo))
+        f.write("MENSAGEM:\n%s\n" % texto)
+    # se for reclamacao/critica, gera plano de melhoria automatico
+    melhoria = None
+    if tipo in ("reclamacao","critica"):
+        melhoria = gen_melhoria(rede, texto)
+        mfname = "%s__%s__melhoria.md" % (ts, slug)
+        with open(os.path.join(CRM_MELH, mfname), "w", encoding="utf-8") as f:
+            f.write("# PLANO DE MELHORIA — %s\n\n" % cliente)
+            f.write("> Gerado pela R7 a partir de %s\n\n" % cat)
+            f.write(melhoria)
+        melhoria = mfname
+    return jsonify({"ok": True, "rede": rede, "tipo": tipo, "ficheiro": fname,
+                    "melhoria": melhoria, "msg": "Registado em estacao/sala_crm/."})
+
+@app.route("/api/crm/improve", methods=["POST"])
+def crm_improve():
+    # gera plano de melhoria a partir de texto livre (critica/reclamacao)
+    d = request.get_json(force=True) or {}
+    rede = (d.get("rede") or "instagram").strip().lower()
+    texto = (d.get("texto") or "").strip()
+    if not texto:
+        return jsonify({"ok": False, "reason": "texto vazio"}), 400
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    melhoria = gen_melhoria(rede, texto)
+    mfname = "%s__melhoria.md" % ts
+    with open(os.path.join(CRM_MELH, mfname), "w", encoding="utf-8") as f:
+        f.write("# PLANO DE MELHORIA\n\n> %s\n\n%s" % (ts, melhoria))
+    return jsonify({"ok": True, "melhoria": mfname})
+
+def gen_melhoria(rede, texto):
+    L = []
+    L.append("## ANALISE")
+    L.append("Rede: %s" % rede)
+    L.append("Sinal recebido: %s" % texto[:200])
+    L.append("")
+    L.append("## CAUSA PROVAVEL")
+    L.append("- Resposta lenta ou ausente (SLA de resposta)")
+    L.append("- Conteudo nao alinhado com expectativa do cliente")
+    L.append("- Falha de comunicacao (tom/idioma)")
+    L.append("")
+    L.append("## ACOES CORRETIVAS (24-48h)")
+    L.append("1. Responder publicamente com empatia + DM para resolver.")
+    L.append("2. Se reclamacao de produto/servico: criar processo de seguimento.")
+    L.append("3. Ajustar tom de comunicacao (mais proximo, menos robotico).")
+    L.append("4. Agendar post de 'ouvimos-vos' (fecha o ciclo).")
+    L.append("")
+    L.append("## MELHORIA CONTINUA")
+    L.append("- Dashboard semanal de sentimento (positivo/negativo).")
+    L.append("- Templates de resposta por categoria (reclamacao/elogio/duvida).")
+    L.append("- KPI: tempo medio de resposta < 24h, satisfacao > 80%%.")
     return "\n".join(L)
 
 
