@@ -7,9 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<!-- Leitura de PDF/Word 100% no browser (sem servidor) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.7.0/mammoth.browser.min.js"></script>
+<!-- Leitura de PDF/Word 100% no browser (libs locais, sem CDN externo) -->
+<script src="assets/lib/pdf.min.js"></script>
+<script src="assets/lib/mammoth.browser.min.js"></script>
+<script>
+  // aponta o worker do pdf.js para o ficheiro local; desativa worker em file:// (CORS)
+  if (window.pdfjsLib) {
+    if (location.protocol === 'file:') { pdfjsLib.disableWorker = true; }
+    else { pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/lib/pdf.worker.min.js'; }
+  }
+</script>
 <style>
   :root{
     --bg-0:#0a0c08; --bg-1:#12150f; --bg-2:#181c14;
