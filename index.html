@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Leitura de PDF/Word 100% no browser (sem servidor) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.7.0/mammoth.browser.min.js"></script>
 <style>
   :root{
     --bg-0:#0a0c08; --bg-1:#12150f; --bg-2:#181c14;
@@ -766,33 +769,76 @@ function mkPlan(room){
 }
 function renderPlans(){
   const box=document.getElementById('plans');
-  // mostra planos do backend (Sala de Negocios, 15 anos exp.)
-  fetch('/api/business').then(r=>r.json()).then(b=>{
-    let html='';
-    (b.plans||[]).forEach(d=>{
-      html+='<div class="plan-doc"><h4>'+ (d.idea||'').slice(0,80) +'</h4>'+
-             '<div style="color:var(--ink-faint);font-size:8px;">por '+(d.autor||'?')+' · meta '+(d.meta_receita||0)+' USD · '+ (d.prazo_meses||0) +' meses</div>'+
-             '<pre style="white-space:pre-wrap;max-height:160px;overflow:auto;font-size:8px;color:var(--ink-dim);background:#12150f;padding:6px;border:1px solid #2a2f24;border-radius:3px;">'+(d.plano||'').slice(0,1400)+'</pre></div>';
-    });
-    if(!html) html='<div style="font-size:10px;color:var(--ink-faint)">Introduz uma ideia ou carrega um PDF/Word para a Sala de Negocios gerar plano completo.</div>';
-    box.innerHTML=html;
-  }).catch(()=>{ box.innerHTML='<div style="font-size:10px;color:var(--ink-faint)">Sala de Negocios (backend) indisponivel.</div>'; });
+  // planos do localStorage (browser autonomo — funciona no GitHub Pages e local)
+  const plans=loadPlans();
+  let html='';
+  plans.forEach(d=>{
+    html+='<div class="plan-doc"><h4>'+ (d.idea||'').slice(0,80) +'</h4>'+
+           '<div style="color:var(--ink-faint);font-size:8px;">por '+(d.autor||'?')+' · meta '+(d.meta||0)+' USD · '+ (d.prazo||0) +' meses · '+(d.ts||'')+'</div>'+
+           '<pre style="white-space:pre-wrap;max-height:160px;overflow:auto;font-size:8px;color:var(--ink-dim);background:#12150f;padding:6px;border:1px solid #2a2f24;border-radius:3px;">'+(d.plano||'').slice(0,1400)+'</pre></div>';
+  });
+  if(!html) html='<div style="font-size:10px;color:var(--ink-faint)">Introduz uma ideia ou carrega um PDF/Word para a Sala de Negocios gerar plano completo.</div>';
+  box.innerHTML=html;
 }
-function upDoc(){
-  const f=document.getElementById('docfile').files[0]; if(!f){document.getElementById('docmsg').textContent='Escolhe um ficheiro.';return;}
-  const fd=new FormData(); fd.append('file',f);
-  fetch('/api/doc/upload',{method:'POST',body:fd}).then(r=>r.json()).then(j=>{
-    document.getElementById('docmsg').textContent = j.ok? ('Carregado: '+j.filename+' ('+j.chars+' chars) — agentes vao usar.') : ('Erro: '+(j.reason||''));
-    if(j.ok) renderPlans();
-  }).catch(()=>{document.getElementById('docmsg').textContent='Falhou o envio.';});
+function loadDocs(){ try{ return JSON.parse(localStorage.getItem('temspest_docs')||'[]'); }catch(e){ return []; } }
+function saveDocs(a){ localStorage.setItem('temspest_docs', JSON.stringify(a.slice(-10))); }
+function loadPlans(){ try{ return JSON.parse(localStorage.getItem('temspest_plans')||'[]'); }catch(e){ return []; } }
+function savePlans(a){ localStorage.setItem('temspest_plans', JSON.stringify(a.slice(-10))); }
+async function readFile(f){
+  const nm=f.name.toLowerCase();
+  if(nm.endsWith('.pdf')){
+    const buf=await f.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    let txt='';
+    for(let i=1;i<=Math.min(pdf.numPages,20);i++){ const p=await pdf.getPage(i); const c=await p.getTextContent(); txt+=' '+(c.items.map(it=>it.str||'').join(' ')); }
+    return {filename:f.name, tipo:'pdf', texto:txt.trim().slice(0,8000)};
+  }
+  if(nm.endsWith('.docx')||nm.endsWith('.doc')){
+    const arr=await f.arrayBuffer(); const res=await mammoth.extractRawText({arrayBuffer:arr});
+    return {filename:f.name, tipo:'docx', texto:(res.value||'').trim().slice(0,8000)};
+  }
+  if(nm.endsWith('.txt')||nm.endsWith('.md')){
+    return {filename:f.name, tipo:'txt', texto:(await f.text()).trim().slice(0,8000)};
+  }
+  throw new Error('formato nao suportado (usa PDF/Word/txt)');
+}
+function genPlanJS(idea, docsText){
+  const ideaU=(idea||'ideia').trim().replace(/^\w/,c=>c.toUpperCase());
+  const meta=50000, prazo=12, autor='STRATEGIST';
+  const ctx=(docsText||'').slice(0,1200).replace(/\n+/g,' ');
+  const L=[];
+  L.push('PLANO DE NEGOCIO — '+ideaU);
+  L.push('Elaborado pela Sala de Negocios (TTEMSPESTT) com criterio de consultoria senior.\n');
+  L.push('1. RESUMO EXECUTIVO\n  '+ideaU+' e uma oportunidade de negocio em Angola com trajeto de receita recorrente. Posicionamento: marca forte de gaming/creator economy. Meta conservadora ano 1: '+meta+' USD.');
+  L.push('\n2. ANALISE DE MERCADO\n  Mercado angolano: 35M habitantes, penetracao movel >70%, creator economy em fase inicial (pouca concorrencia qualificada). Diferencial: ecossistema de agentes automaticos a produzir conteudo 24/7.');
+  if(ctx) L.push('  Contexto dos teus documentos: '+ctx.slice(0,500));
+  L.push('\n3. MODELO DE RECEITA\n  Fontes: AdSense/RPM + sponsors locais + affiliatos + TikTok Shop + eventos ao vivo. Estimativa ano 1: '+meta+' USD (margem alvo 60%).');
+  L.push('\n4. OPERACOES\n  Sala de Criacao (4 estacoes) produz clips/shorts/reels. Sala de Edicao eleva qualidade. Sala de Negocios gere funil. Tudo orquestrado pela sala E (HERMES).');
+  L.push('\n5. RISCO E MITIGACAO\n  Volatilidade Kz -> contabilizar em USD. Plataformas mudam -> diversificar 4 canais. Burnout -> agentes com morale + movimento.');
+  L.push('\n6. ROADMAP ('+prazo+' meses)\n  Fase 1 (0-3m): lancar operacao, 50 clips, 1 sponsor. Fase 2 (3-9m): 200 clips/mes + TikTok Shop. Fase 3 (9-24m): equipa 20+, $1M. Fase 4 (24m+): dominio gaming Angola.');
+  L.push('\n7. KPIs VISIVEIS\n  Views totais (YouTube/TikTok/Instagram), capital real, clips/mes, RPM, retencao >45%, CTR thumb >8%.');
+  L.push('\nRESULTADO ESPERADO: '+meta+' USD em '+prazo+' meses, escalavel para $2B.');
+  return {plano:L.join('\n'), autor, meta, prazo};
+}
+async function upDoc(){
+  const f=document.getElementById('docfile').files[0];
+  if(!f){document.getElementById('docmsg').textContent='Escolhe um ficheiro.';return;}
+  document.getElementById('docmsg').textContent='A ler '+f.name+'...';
+  try{
+    const d=await readFile(f);
+    const docs=loadDocs(); docs.push(d); saveDocs(docs);
+    document.getElementById('docmsg').textContent='Carregado: '+d.filename+' ('+d.texto.length+' chars) — agentes vao usar.';
+    renderPlans();
+  }catch(e){ document.getElementById('docmsg').textContent='Erro: '+e.message; }
 }
 function sendIdea(){
   const t=document.getElementById('idea').value.trim(); if(!t){alert('Escreve a tua ideia.');return;}
-  fetch('/api/idea',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:t})}).then(r=>r.json()).then(j=>{
-    if(j.ok){ document.getElementById('idea').value=''; renderPlans();
-      log('Sala de Negocios gerou plano ('+j.autor+') — meta '+j.meta_usd+' USD / '+j.prazo+' meses.','e'); }
-    else alert('Erro: '+(j.reason||''));
-  }).catch(()=>alert('Backend indisponivel.'));
+  const docs=loadDocs(); const ctx=docs.map(d=>d.texto).join('\n');
+  const g=genPlanJS(t, ctx);
+  const plans=loadPlans(); plans.unshift({idea:t, autor:g.autor, meta:g.meta, prazo:g.prazo, plano:g.plano, ts:new Date().toLocaleString('pt')});
+  savePlans(plans);
+  document.getElementById('idea').value=''; renderPlans();
+  log('Sala de Negocios gerou plano ('+g.autor+') — meta '+g.meta+' USD / '+g.prazo+' meses.','e');
 }
 document.getElementById('btn-approve-all').addEventListener('click',()=>{
   state.pending.slice().forEach(p=>{ if(!p.plan) approve(p.id); });
