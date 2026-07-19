@@ -39,7 +39,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE, "finance.db")
 
 # === PASTAS DA ESTACAO (filesystem local, sem web upload) ===
-ESTACAO = os.path.join(BASE, "estacao")
+ESTACAO = os.path.join(BASE, "estacao", "secretaria")  # SECRETARIA: todas as salas + ideias centralizadas aqui
 SALAS = {
     "sala_criacao":   {"num": "R1", "name": "SALA DE CRIACAO",   "path": os.path.join(ESTACAO, "sala_criacao")},
     "sala_edicao":    {"num": "R2", "name": "SALA DE EDICAO",    "path": os.path.join(ESTACAO, "sala_edicao")},
@@ -636,7 +636,7 @@ def idea():
         f.write("# IDEIA DE NEGOCIO — %s\n\n" % idea_txt.strip())
         f.write("> Gerado pela Sala de Negocios (TTEMSPESTT) — %s\n\n" % ts)
         f.write(plano)
-        f.write("\n\n---\n*Documento produzido automaticamente. Pasta: estacao/ideias_negocio/%s*\n" % fname)
+        f.write("\n\n---\n*Documento produzido automaticamente. Pasta: estacao/secretaria/ideias_negocio/%s*\n" % fname)
     # 2) contexto tambem vai para a sala de negocios (agentes vao buscar la)
     neg_path = os.path.join(SALAS["sala_negocios"]["path"], fname)
     with open(neg_path, "w", encoding="utf-8") as f:
@@ -697,7 +697,7 @@ def ad_brief():
             f.write("# PUBLICIDADE v%d — %s\n\n" % (v, cliente))
             f.write("> Gerado pelo Estudio Publicitario (TTEMSPESTT) — %s\n\n" % ts)
             f.write(vtext)
-            f.write("\n\n---\n*Aguarda aprovacao do cliente. Pasta: estacao/sala_publicidade/publicidades/%s*\n" % fname)
+            f.write("\n\n---\n*Aguarda aprovacao do cliente. Pasta: estacao/secretaria/sala_publicidade/publicidades/%s*\n" % fname)
         versoes.append({"versao": v, "file": fname, "texto": vtext})
     # ficheiro de aprovacao (estado: pendente)
     apr_path = os.path.join(PUB_APROV, "%s__%s.json" % (ts, slug))
@@ -812,7 +812,7 @@ def web_site():
     with open(os.path.join(WEB_GUIAS, guia_fname), "w", encoding="utf-8") as f:
         f.write(guia)
     return jsonify({"ok": True, "nome": nome, "site": site_fname, "guia": guia_fname,
-                    "msg": "Site gerado + guia de publicacao. Ver em estacao/sala_web/."})
+                    "msg": "Site gerado + guia de publicacao. Ver em estacao/secretaria/sala_web/."})
 
 REDES = {
  "instagram": {"onde":"app Instagram (Business) + Meta Business Suite", "passos":"1) Criar conta Business · 2) Ligar a FB Page @TTEMSPESTT · 3) Conectar apps (Meta Business Suite) · 4) Agendar posts na Suite · 5) Usar Insights para horarios"},
@@ -921,7 +921,7 @@ def crm_add():
             f.write(melhoria)
         melhoria = mfname
     return jsonify({"ok": True, "rede": rede, "tipo": tipo, "ficheiro": fname,
-                    "melhoria": melhoria, "msg": "Registado em estacao/sala_crm/."})
+                    "melhoria": melhoria, "msg": "Registado em estacao/secretaria/sala_crm/."})
 
 @app.route("/api/crm/improve", methods=["POST"])
 def crm_improve():

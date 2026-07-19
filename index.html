@@ -185,7 +185,7 @@
     <div style="font-size:9px;color:var(--ink-faint);line-height:1.5;">
       <button id="btn-idea-open" onclick="abrirIdeia()" style="font-size:10px;padding:5px 10px;background:#4d5f37;color:#eef4e2;border:1px solid var(--green);cursor:pointer;border-radius:3px;">✎ Escrever ideia</button>
       <div id="idea-box" style="display:none;margin-top:6px;">
-        <b style="color:var(--amber)">Escreve a tua ideia</b> — o agente analisa e gera o documento na pasta <b style="color:var(--green)">estacao/ideias_negocio/</b>:
+        <b style="color:var(--amber)">Escreve a tua ideia</b> — o agente analisa e gera o documento na pasta <b style="color:var(--green)">estacao/secretaria/ideias_negocio/</b>:
         <textarea id="idea" placeholder="Ex: canal de warzone para Angola com patrocinios de marcas locais..." style="font-size:9px;width:100%;height:50px;margin:4px 0;background:#12150f;color:var(--ink);border:1px solid #3d4530;border-radius:3px;"></textarea>
         <button onclick="sendIdea()" style="font-size:9px;padding:4px 8px;background:#4d5f37;color:#eef4e2;border:1px solid var(--green);cursor:pointer;border-radius:3px;">Gerar documento (após análise)</button>
         <button onclick="fecharIdeia()" style="font-size:9px;padding:4px 8px;background:#2a2f24;color:var(--ink-soft);border:1px solid #3d4530;cursor:pointer;border-radius:3px;">Fechar</button>
@@ -227,7 +227,7 @@
         <option value="instagram">Instagram</option><option value="tiktok">TikTok</option><option value="facebook">Facebook</option><option value="youtube">YouTube</option><option value="x">X</option>
       </select>
       <button onclick="criarGuia()" style="font-size:9px;padding:4px 8px;background:#2a5f8f;color:#e6eefb;border:1px solid #5aa0e0;cursor:pointer;border-radius:3px;">Gerar guia + checklist</button>
-      <div style="font-size:9px;color:var(--ink-faint);margin-top:4px;">Ficheiros reais em <b>estacao/sala_web/</b> (sites/ · guias/ · contas/ · presenca/).</div>
+      <div style="font-size:9px;color:var(--ink-faint);margin-top:4px;">Ficheiros reais em <b>estacao/secretaria/sala_web/</b> (sites/ · guias/ · contas/ · presenca/).</div>
       <div id="web-list" style="font-size:9px;color:var(--ink-dim);margin-top:6px;max-height:120px;overflow:auto;"></div>
     </div>
   </div>
@@ -245,7 +245,7 @@
       <textarea id="crm-texto" placeholder="Cola a mensagem / reclamação do cliente..." style="font-size:9px;width:100%;height:40px;margin:3px 0;background:#12150f;color:var(--ink);border:1px solid #3d4530;border-radius:3px;"></textarea>
       <button onclick="registarCRM()" style="font-size:9px;padding:4px 8px;background:#8f6a2a;color:#fbf3e6;border:1px solid #d6a44a;cursor:pointer;border-radius:3px;">Registar + gerar melhoria</button>
       <div id="crmmsg" style="color:var(--green);min-height:12px;margin-top:4px;"></div>
-      <div style="font-size:9px;color:var(--ink-faint);margin-top:4px;">Reclamações geram <b>plano de melhoria</b> automático (pasta melhorias/). Ficheiros em <b>estacao/sala_crm/</b>.</div>
+      <div style="font-size:9px;color:var(--ink-faint);margin-top:4px;">Reclamações geram <b>plano de melhoria</b> automático (pasta melhorias/). Ficheiros em <b>estacao/secretaria/sala_crm/</b>.</div>
       <div id="crm-list" style="font-size:9px;color:var(--ink-dim);margin-top:6px;max-height:100px;overflow:auto;"></div>
     </div>
   </div>
@@ -984,14 +984,14 @@ function abrirIdeia(){document.getElementById('idea-box').style.display='block';
 function fecharIdeia(){document.getElementById('idea-box').style.display='none';document.getElementById('btn-idea-open').style.display='inline-block';}
 function sendIdea(){
   const t=document.getElementById('idea').value.trim(); if(!t){alert('Escreve a tua ideia.');return;}
-  // chama o backend que analisa e gera o documento e escreve na pasta estacao/ideias_negocio/
+  // chama o backend que analisa e gera o documento e escreve na pasta estacao/secretaria/ideias_negocio/
   document.getElementById('docmsg').textContent='A analisar e gerar documento...';
   fetch('/api/idea',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:t})}).then(r=>r.json()).then(j=>{
     if(j.ok){
-      document.getElementById('docmsg').textContent='Analise completa. Documento escrito: estacao/ideias_negocio/'+j.file;
+      document.getElementById('docmsg').textContent='Analise completa. Documento escrito: estacao/secretaria/ideias_negocio/'+j.file;
       document.getElementById('idea').value='';
       renderPlans(); renderEstacao();
-      log('Ideia gerada ('+j.autor+') — documento em estacao/ideias_negocio/'+j.file,'e');
+      log('Ideia gerada ('+j.autor+') — documento em estacao/secretaria/ideias_negocio/'+j.file,'e');
     } else { document.getElementById('docmsg').textContent='Erro: '+(j.reason||''); }
   }).catch(e=>{ document.getElementById('docmsg').textContent='Backend indisponivel (servidor local).'; });
 }
@@ -1046,7 +1046,7 @@ function criarSite(){
   document.getElementById('webmsg').textContent='A gerar site + guia...';
   fetch('/api/web/site',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:nome})}).then(r=>r.json()).then(j=>{
     if(j.ok){
-      document.getElementById('webmsg').textContent='Site gerado: estacao/sala_web/sites/'+j.site+' (guia: estacao/sala_web/guias/'+j.guia+')';
+      document.getElementById('webmsg').textContent='Site gerado: estacao/secretaria/sala_web/sites/'+j.site+' (guia: estacao/secretaria/sala_web/guias/'+j.guia+')';
       document.getElementById('web-nome').value='';
       renderWeb();
       log('R6 gerou site para '+j.nome+' + guia de publicacao.','e');
@@ -1083,7 +1083,7 @@ function registarCRM(){
   document.getElementById('crmmsg').textContent= tipo==='reclamacao' ? 'A registar + gerar plano de melhoria...' : 'A registar interacao...';
   fetch('/api/crm/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rede:rede,tipo:tipo,cliente:cliente,texto:texto})}).then(r=>r.json()).then(j=>{
     if(j.ok){
-      let m='Registado ('+j.tipo+') em estacao/sala_crm/.';
+      let m='Registado ('+j.tipo+') em estacao/secretaria/sala_crm/.';
       if(j.melhoria) m+=' Plano de melhoria: melhorias/'+j.melhoria;
       document.getElementById('crmmsg').textContent=m;
       document.getElementById('crm-texto').value=''; document.getElementById('crm-cliente').value='';
