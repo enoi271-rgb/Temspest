@@ -301,6 +301,11 @@ function post(u,obj){{fetch(u,{{method:'POST',headers:{{'Content-Type':'applicat
 setInterval(()=>location.reload(),7000);
 </script></head>
 <body>
+<div style="background:#1a140c;border:1px solid #8fb35a;color:#8fb35a;padding:8px 12px;margin-bottom:12px;font-size:13px;border-radius:4px;">
+  👉 ABRE A <b>ESTACAO COMPLETA</b> (simulador + carregar documentos + planos):
+  <a href="/station" style="color:#e7e4d6;">http://192.168.1.71:5050/station</a>
+  &nbsp;|&nbsp; ou <a href="http://localhost:5050/station" style="color:#e7e4d6;">http://localhost:5050/station</a>
+</div>
 <h1>TEMSPEST // RESULTADOS REAIS</h1>
 <div class="lbl">CAPITAL ATUAL (contagem real)</div>
 <div class="cap">{b['capital']:.2f} €</div>
