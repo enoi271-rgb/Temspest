@@ -11,6 +11,13 @@
 <script src="assets/lib/pdf.min.js"></script>
 <script src="assets/lib/mammoth.browser.min.js"></script>
 <script>
+  // ERRO GLOBAL no TOPO (captura erros silenciosos antes de qq init)
+  window.onerror=function(msg,src,ln,col,err){ try{
+    const el=document.getElementById('log');
+    if(el){ const d=document.createElement('div'); d.style.color='#ff6b6b';
+      d.textContent='[ERRO] '+(err&&err.stack?err.stack:msg)+' @'+ln+':'+col; el.appendChild(d); el.scrollTop=el.scrollHeight; }
+    console.error('[ERRO]',msg,ln,col,err);
+  }catch(e){} return false; };
   // aponta o worker do pdf.js para o ficheiro local; desativa worker em file:// (CORS)
   if (window.pdfjsLib) {
     if (location.protocol === 'file:') { pdfjsLib.disableWorker = true; }
@@ -517,7 +524,7 @@ function tick(){
 
   state.rate=0;
   updateFlow();
-  if(state.simSeconds%10===0){syncCapitalReal();renderHUD();renderRooms();renderCore();renderMaster();}
+  renderHUD();renderRooms();renderCore();renderMaster();
   checkMilestones();
   timer=setTimeout(tickSafe,1000);
 }
@@ -786,7 +793,7 @@ function drawStation(){
   {
     const s2=SALA_POS[7];
     // casco da nave (igual às outras salas)
-    drawSalaEmNave(s2,'rgb(143,179,90)',{color:'143,179,90',agents:[]});
+    drawSalaEmNave(s2,'rgb(143,179,90)',{id:'r8',color:'143,179,90',agents:[]});
     // rotulo
     ctx.fillStyle='rgba(143,179,90,0.95)';ctx.font='600 13px Teko, sans-serif';
     ctx.fillText('R8 · SALA DE RELAXE', s2.x+14, s2.y+20);
@@ -1168,10 +1175,14 @@ renderHUD();renderRooms();renderCore();renderMaster();renderEstacao();renderPend
 drawStation();
 log('TEMSPEST STATION online. Agentes a trabalhar rumo aos $2B.','e');
 // ARRANCA AUTOMATICO (ecossistema ativo ao abrir — sem clicar)
-(function autoStart(){ if(state.running)return; state.running=true;
+(function autoStart(){ try{
+  if(state.running)return;
+  state.running=true;
   const bs=document.getElementById('btn-start'); if(bs)bs.disabled=true;
   const bp=document.getElementById('btn-pause'); if(bp)bp.disabled=false;
-  tickSafe(); })();
+  renderHUD();renderRooms();renderCore();renderMaster();
+  start();
+}catch(e){ log('ERRO autoStart: '+(e&&e.stack?e.stack:e),'e'); console.error(e); } })();
 // arranca automaticamente
 
 // ponte WhatsApp: poll decisions do servidor (se online)
