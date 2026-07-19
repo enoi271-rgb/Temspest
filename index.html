@@ -253,9 +253,10 @@
     <div class="panel-head"><span class="panel-num">€</span><span class="display panel-title">Resultados Reais</span></div>
     <div id="real-balance" style="font-size:22px;color:var(--green);margin:6px 0;">$0</div>
     <div style="font-size:9px;color:var(--ink-faint)">Ganho: <span id="real-ganho">$0</span> · Perda: <span id="real-perca">$0</span></div>
-    <div style="font-size:10px;color:var(--ink-dim);margin-top:8px;">Carregar GANHO / PERCA</div>
+    <div style="font-size:11px;color:var(--amber);margin-top:4px;">LÍQUIDO: <span id="real-net">$0</span></div>
+    <div style="font-size:10px;color:var(--ink-dim);margin-top:8px;">Carregar GANHO / PERCA (tu controlas o valor real)</div>
     <select id="r-kind" style="font-family:'IBM Plex Mono';font-size:10px;width:100%;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
-      <option value="ganho">GANHO</option><option value="perca">PERCA</option></select>
+      <option value="ganho">GANHO (+)</option><option value="perca">PERCA (−)</option></select>
     <div style="display:flex;gap:4px;margin:2px 0;">
       <input id="r-amt" type="number" step="0.01" placeholder="Valor" style="font-family:'IBM Plex Mono';font-size:10px;flex:1;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
       <select id="r-cur" style="font-family:'IBM Plex Mono';font-size:10px;width:64px;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;">
@@ -268,7 +269,8 @@
     <div style="font-size:10px;color:var(--ink-dim);margin-top:10px;">Informacao para os agentes</div>
     <textarea id="r-info" placeholder="Cola briefing / dados / tendencias..." style="font-family:'IBM Plex Mono';font-size:10px;width:100%;height:48px;margin:2px 0;background:#0e110a;color:var(--ink-soft);border:1px solid #2a2f24;"></textarea>
     <button class="btn ghost" id="btn-info" style="font-size:13px;padding:3px 10px;width:100%;">Enviar aos agentes</button>
-    <div id="real-feed" style="font-size:9px;color:var(--ink-faint);margin-top:6px;"></div>
+    <div style="font-size:9px;color:var(--ink-faint);margin-top:6px;">Histórico (controlo real, do backend):</div>
+    <div id="real-feed" style="font-size:9px;color:var(--ink-dim);margin-top:4px;max-height:120px;overflow:auto;"></div>
   </div>
 
   <div class="layout">
@@ -468,6 +470,28 @@ function tick(){
         a.task=randTask(room,a.role);a.busy=rint(3,10);}
     });
   });
+  // ROTACAO DE TURNO / RELAXE: bots com morale baixa vao descansar (R8); quando recuperam, voltam ao trabalho
+  state.rooms.forEach(room=>{
+    room.agents.forEach(a=>{
+      if(a.state==='rest'){
+        a.restT=(a.restT||0)+state.speed;
+        a.morale=Math.min(1, a.morale + 0.02*state.speed);
+        if(a.restT>=40 || a.morale>=0.9){ // volta ao servico (outro bot ja assumiu)
+          a.state='work'; a.restT=0; a.busy=rint(3,10); a.task=randTask(room,a.role);
+        }
+      } else if(a.morale<0.28 && a.busy<=0 && !a._relax){
+        a.state='rest'; a._relax=true; a.restT=0; // vai descansar (turno cedido a colega)
+        log(a.callsign+' ('+room.num+') foi a Sala de Relaxe — outro agente assume o turno.','e');
+        // colega assume: recruta reforco temporario na sala para manter servico
+        if(room.agents.filter(x=>x.state!=='rest').length<1){
+          const role=room.roles[rint(0,room.roles.length-1)]; const r=makeAgent(room,role); r.busy=rint(3,10); room.agents.push(r);
+          log('Reforco de turno entrou em '+room.num+' (servico em ordem).','e');
+        }
+        setTimeout(()=>{a._relax=false;}, 50);
+      }
+    });
+  });
+
   state.rate=0;
   updateFlow();
   if(state.simSeconds%10===0){syncCapitalReal();renderHUD();renderRooms();renderCore();renderMaster();}
@@ -671,14 +695,36 @@ function drawStation(){
   ng.addColorStop(0,'rgba(60,40,90,0.10)');ng.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=ng;ctx.fillRect(0,0,W,H);
 
-  // CORREDORES (feixes de energia E->sala)
+  // PONTES ESPACIAIS (corredores em arco, com barra de energia + pórtico) E->cada sala
+  const drawBridge = (x1,y1,x2,y2,col,phase,width) => {
+    const mx=(x1+x2)/2, my=(y1+y2)/2 - Math.abs(x2-x1)*0.10 - 18; // arco para cima
+    ctx.beginPath(); ctx.moveTo(x1,y1);
+    ctx.quadraticCurveTo(mx,my,x2,y2);
+    const grd=ctx.createLinearGradient(x1,y1,x2,y2);
+    grd.addColorStop(0,'rgba('+col+',0.05)'); grd.addColorStop(0.5,'rgba('+col+',0.22)'); grd.addColorStop(1,'rgba('+col+',0.05)');
+    ctx.strokeStyle=grd; ctx.lineWidth=width||14; ctx.stroke();
+    const pulse=0.4+0.6*Math.abs(Math.sin(Date.now()/700+phase));
+    ctx.strokeStyle='rgba('+col+','+(0.55*pulse)+')'; ctx.lineWidth=2.4; ctx.stroke();
+    // pórtico (anel) no meio da ponte
+    const t=0.5; const px=(1-t)*(1-t)*x1+2*(1-t)*t*mx+t*t*x2, py=(1-t)*(1-t)*y1+2*(1-t)*t*my+t*t*y2;
+    ctx.strokeStyle='rgba('+col+','+(0.6*pulse)+')'; ctx.lineWidth=2; ctx.save(); ctx.translate(px,py); ctx.rotate(Date.now()/1600+phase);
+    ctx.beginPath(); ctx.ellipse(0,0,7,3.5,0,0,Math.PI*2); ctx.stroke(); ctx.restore();
+  };
   state.rooms.forEach((room,i)=>{
     const s2=SALA_POS[i]; const sx=s2.x+s2.w/2, sy=s2.y+s2.h/2;
-    const pulse=0.4+0.6*Math.abs(Math.sin(Date.now()/600+i));
-    ctx.strokeStyle='rgba('+room.color+','+(0.25*pulse)+')';ctx.lineWidth=8;
-    ctx.beginPath();ctx.moveTo(HUB.x,HUB.y);ctx.lineTo(sx,sy);ctx.stroke();
-    ctx.strokeStyle='rgba('+room.color+','+(0.6*pulse)+')';ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(HUB.x,HUB.y);ctx.lineTo(sx,sy);ctx.stroke();
+    drawBridge(HUB.x,HUB.y, sx,sy, room.color, i, 14);
+  });
+  // LIGACOES ENTRE SALAS (transbordo — os bots conhecem-se): vizinhos adjacentes no grid
+  const pairs=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0]];
+  pairs.forEach((pr,k)=>{
+    const a=SALA_POS[pr[0]], b=SALA_POS[pr[1]];
+    const ax=a.x+a.w/2, ay=a.y+a.h/2, bx=b.x+b.w/2, by=b.y+b.h/2;
+    const col=state.rooms[pr[0]].color;
+    ctx.strokeStyle='rgba('+col+',0.16)'; ctx.lineWidth=5;
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.quadraticCurveTo((ax+bx)/2,(ay+by)/2-10,bx,by); ctx.stroke();
+    const pulse=0.3+0.5*Math.abs(Math.sin(Date.now()/900+k));
+    ctx.strokeStyle='rgba(150,180,220,'+(0.4*pulse)+')'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.quadraticCurveTo((ax+bx)/2,(ay+by)/2-10,bx,by); ctx.stroke();
   });
 
   // SALAS como NAVES
@@ -692,20 +738,48 @@ function drawStation(){
     ctx.fillText(room.func.slice(0,42), s2.x+14, s2.y+34);
   });
 
-  // FLUXO (pacotes a circular nos feixes)
+  // FLUXO (pacotes a circular pelas pontes em arco)
   state.flow.forEach(p=>{
     const fi=state.rooms.findIndex(x=>x.id===p.from);
     const ti=state.rooms.findIndex(x=>x.id===p.to);
     const f=SALA_POS[fi], t=SALA_POS[ti];
     const fx=f.x+f.w/2, fy=f.y+f.h/2, tx=t.x+t.w/2, ty=t.y+t.h/2;
-    const mx=HUB.x, my=HUB.y;
+    // arco via HUB (como as pontes): ida f->HUB, volta HUB->t
     let x,y;
-    if(p.t<0.5){const k=p.t/0.5; x=fx+(mx-fx)*k; y=fy+(my-fy)*k;}
-    else {const k=(p.t-0.5)/0.5; x=mx+(tx-mx)*k; y=my+(ty-my)*k;}
+    const qx=(a,b,c,k)=>(1-k)*(1-k)*a+2*(1-k)*k*b+k*k*c;
+    if(p.t<0.5){const k=p.t/0.5; x=qx(fx,(fx+HUB.x)/2,HUB.x,k); y=qx(fy,(fy+HUB.y)/2,HUB.y,k);}
+    else {const k=(p.t-0.5)/0.5; x=qx(HUB.x,(HUB.x+tx)/2,tx,k); y=qx(HUB.y,(HUB.y+ty)/2,ty,k);}
     ctx.save();ctx.globalAlpha=Math.max(0.2,1-p.t);
     ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();
     ctx.restore();
   });
+
+  // SALA DE RELAXE (R8) — modulo acoplado à nave-mae: bots descansam e rodam turno
+  {
+    const rx=HUB.x-58, ry=HUB.y+2, rw=116, rh=20;
+    const pulseR=0.4+0.6*Math.abs(Math.sin(Date.now()/900));
+    ctx.save();
+    ctx.fillStyle='rgba(40,46,38,0.85)'; ctx.strokeStyle='rgba(143,179,90,'+(0.5*pulseR)+')'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.ellipse(rx+rw/2, ry+rh/2, rw/2, rh/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    // "Z" a flutuar
+    ctx.fillStyle='rgba(143,179,90,'+(0.5+0.4*pulseR)+')'; ctx.font='600 11px Teko, sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Z z Z', rx+rw/2, ry-4);
+    // bots a descansar (ate 3) com morale a recuperar
+    const resting=[];
+    state.rooms.forEach(r=>r.agents.forEach(a=>{ if(a.state==='rest') resting.push(a); }));
+    resting.slice(0,3).forEach((a,k)=>{
+      const zx=rx+22+k*36, zy=ry+rh/2;
+      const bob=Math.sin(Date.now()/300+k)*1.5;
+      ctx.fillStyle='rgba(230,210,80,0.95)'; ctx.beginPath(); ctx.ellipse(zx,zy+bob,7,9,0,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='rgba(120,100,20,0.9)'; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle='#0a0c08'; ctx.beginPath(); ctx.arc(zx-2,zy-2+bob,1.6,0,Math.PI*2); ctx.arc(zx+2,zy-2+bob,1.6,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(200,210,230,0.6)'; ctx.font='6px "IBM Plex Mono"'; ctx.fillText(a.callsign.slice(0,5), zx, zy+15);
+    });
+    ctx.fillStyle='rgba(143,179,90,0.9)'; ctx.font='9px "IBM Plex Mono"';
+    ctx.fillText('SALA DE RELAXE // ROTACAO', rx+rw/2, ry+rh+12);
+    ctx.textAlign='left';
+    ctx.restore();
+  }
 
   // HUB "E" = NAVE-MAE (central)
   const pulse=state.running?(0.55+0.45*Math.abs(Math.sin(Date.now()/300))):0.4;
@@ -1046,7 +1120,7 @@ state.rooms.forEach(r=>recruitRoom(r,2));
 renderHUD();renderRooms();renderCore();renderMaster();
 log('TEMSPEST STATION online. Agentes a trabalhar rumo aos $2B.','');
 drawStation();
-renderPending();renderPlans();renderEstacao();renderPub();renderWeb();renderCRM();
+renderPending();renderPlans();renderEstacao();renderPub();renderWeb();renderCRM();renderLedger();
 state.rooms.find(r=>r.id==='r2')._planT=0;
 // arranca automaticamente
 
@@ -1057,8 +1131,27 @@ document.getElementById('btn-entry').addEventListener('click',()=>{
   const kind=document.getElementById('r-kind').value, amount=parseFloat(document.getElementById('r-amt').value||0);
   const cur=document.getElementById('r-cur').value, origin=document.getElementById('r-origin').value||'Outro', agent=document.getElementById('r-agent').value||'-';
   if(amount<=0){log('Valor invalido.','');return;}
-  fetch('/api/entry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,amount,origin,agent,note:'',currency:cur})}).then(r=>r.json()).then(b=>{ log('Registado: '+kind+' '+money(amount)+(cur==='KZ'?(' -> '+money(b.capital)):'')+' (capital '+money(b.capital)+')','e'); }).catch(()=>{});
+  fetch('/api/entry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,amount,origin,agent,note:'',currency:cur})}).then(r=>r.json()).then(b=>{
+    log('Registado: '+kind+' '+money(amount)+(cur==='KZ'?(' -> '+money(b.capital)):'')+' (capital '+money(b.capital)+')','e');
+    document.getElementById('r-amt').value='';
+    renderLedger();
+  }).catch(()=>{});
 });
+function renderLedger(){
+  fetch('/api/ledger').then(r=>r.json()).then(rows=>{
+    let h='';
+    rows.slice(0,25).forEach(x=>{
+      const neg=x.kind==='perca';
+      h+='<div style="border-left:2px solid '+(neg?'#c04a34':'#8fb35a')+';padding:1px 5px;margin:2px 0;color:'+(neg?'#d98b7a':'var(--ink-soft)')+';">'+
+         (neg?'−':'+')+money(x.amount)+' <span style="color:var(--ink-faint)">'+x.origin+' · '+(x.agent||'-')+'</span></div>';
+    });
+    document.getElementById('real-feed').innerHTML=h||'<span style="color:var(--ink-faint)">Sem registos ainda.</span>';
+    fetch('/api/balance').then(r=>r.json()).then(b=>{
+      document.getElementById('real-net').textContent=money(b.capital);
+      document.getElementById('real-net').style.color = b.capital>=0?'var(--green)':'#c04a34';
+    });
+  }).catch(()=>{});
+}
 document.getElementById('r-amt').addEventListener('input',()=>{
   const cur=document.getElementById('r-cur').value, amt=parseFloat(document.getElementById('r-amt').value||0);
   const conv=document.getElementById('r-conv');

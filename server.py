@@ -247,6 +247,14 @@ def entry():
     return jsonify({"ok": True, **b})
 
 
+@app.route("/api/ledger", methods=["GET"])
+def get_ledger():
+    cx = db()
+    rows = cx.execute("SELECT id,kind,amount,origin,agent,note,ts FROM ledger ORDER BY id DESC LIMIT 30").fetchall()
+    cx.close()
+    return jsonify([dict(r) for r in rows])
+
+
 @app.route("/api/balance", methods=["GET"])
 def get_balance():
     return jsonify(balance())
