@@ -25,3 +25,5 @@ queue.json
 finance.db
 # Ficheiros de plano de negocio (gerados localmente, pesados em binarios)
 negocios/
+clips_shorts_hud/
+assets/hud_vertical.png
