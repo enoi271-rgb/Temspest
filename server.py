@@ -33,7 +33,7 @@ try:
 except FileNotFoundError:
     pass
 
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, send_from_directory
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE, "finance.db")
@@ -1148,6 +1148,29 @@ def video_hype():
     emit_event("temspest-ai-os.r1-criacao", "video.hype.gerado", {"n_cortes": n_cortes_reais}, destino="temspest-ai-os.r4-financeiro")
     return jsonify({"ok": True, "gerados": len(out), "pasta": HYPE_DIR, "detalhes": out[:6],
                     "msg": f"{len(out)} cortes de hype gerados em estacao/secretaria/sala_criacao/hype/ — aguardam tua aprovacao para publicar."})
+
+
+@app.route("/alfred")
+def alfred_ui():
+    return send_from_directory(os.path.join(BASE, "interface"), "alfred.html")
+
+
+@app.route("/api/alfred/events")
+def alfred_events():
+    eventos = []
+    try:
+        with open(EVENT_BUS_PATH, "r") as f:
+            for linha in f:
+                linha = linha.strip()
+                if not linha:
+                    continue
+                try:
+                    eventos.append(json.loads(linha))
+                except Exception:
+                    continue
+    except FileNotFoundError:
+        pass
+    return jsonify({"eventos": eventos[-60:]})
 
 
 if __name__ == "__main__":

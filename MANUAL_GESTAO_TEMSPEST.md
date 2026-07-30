@@ -33,7 +33,7 @@ TEMSPEST STATION e um **ecossistema de salas** (cada sala = uma nave) onde **age
 | R6 | Web & Presenca | Sites/landing, gestao de contas, presenca em todas as redes | SOCIAL_MGR, AUTOMATOR, BRAND_STRAT |
 | R7 | Atendimento & Clientes | Interacoes, reclamacoes, criticas, melhoria | SUPPORT, INSIGHT, SENTIMENT |
 | R8 | Relaxe | Nave separada: bar + snooker + sofas; agentes descansam se morale < 28% | — |
-| E (HUB) | Mae | Hermes (supervisor) garante que todos trabalham | HERMES |
+| E (HUB) | Mae | Antigo HERMES — aposentado. O papel de coordenação foi absorvido pelo Kernel do Alfred, o coordenador externo do ecossistema TEMSPEST. | — |
 
 **Auto-arranque:** ao abrir, o ecossistema fica **ATIVO** sozinho (sem clicar "Ativar"). O botao "ATIVAR" fica desativado.
 

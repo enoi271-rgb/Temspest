@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Alfred // Event Bus — TEMSPEST</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg-0:#0a0c08; --bg-1:#12150f; --bg-2:#181c14;
+    --ink:#e7e4d6; --ink-dim:#9a9c8c; --ink-faint:#5f6355;
+    --green:#8fb35a; --amber:#d99a3e; --red:#c04a34; --blue:#78b4e6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:24px; background:var(--bg-0); color:var(--ink);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:13px;
+  }
+  h1{
+    font-size:15px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--amber); margin:0 0 4px 0;
+  }
+  .sub{ color:var(--ink-faint); font-size:11px; margin-bottom:18px; }
+  .bar{ display:flex; gap:10px; align-items:center; margin-bottom:16px; }
+  button{
+    background:var(--bg-2); color:var(--ink); border:1px solid var(--ink-faint);
+    padding:5px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:11px;
+  }
+  button:hover{ border-color:var(--amber); color:var(--amber); }
+  #status{ color:var(--ink-faint); font-size:11px; }
+  table{ width:100%; border-collapse:collapse; }
+  th{
+    text-align:left; color:var(--ink-faint); font-weight:normal; font-size:10px;
+    text-transform:uppercase; letter-spacing:.05em; padding:6px 8px; border-bottom:1px solid var(--bg-2);
+  }
+  td{ padding:6px 8px; border-bottom:1px solid var(--bg-1); vertical-align:top; font-size:12px; }
+  tr:hover td{ background:var(--bg-1); }
+  .id{ color:var(--ink-faint); }
+  .ts{ color:var(--ink-dim); white-space:nowrap; }
+  .origem{ color:var(--blue); }
+  .destino{ color:var(--green); }
+  .tipo{ color:var(--amber); }
+  pre.payload{
+    margin:0; white-space:pre-wrap; word-break:break-word; color:var(--ink-dim); font-size:11px;
+  }
+  .empty{ color:var(--ink-faint); padding:20px 8px; }
+</style>
+</head>
+<body>
+  <h1>Alfred // Event Bus</h1>
+  <div class="sub">Leitura de <code>estacao/event_bus.jsonl</code> via <code>/api/alfred/events</code> — mostra os últimos 60 eventos. Só leitura, não envia nada.</div>
+  <div class="bar">
+    <button id="btn-refresh">↻ Atualizar</button>
+    <span id="status">a carregar…</span>
+  </div>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Momento</th><th>Origem</th><th>Tipo</th><th>Destino</th><th>Payload</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+<script>
+function fmtTs(ts){
+  try{ return new Date(ts*1000).toLocaleString('pt-PT'); }catch(e){ return String(ts); }
+}
+async function load(){
+  const status = document.getElementById('status');
+  const rows = document.getElementById('rows');
+  status.textContent = 'a carregar…';
+  try{
+    const res = await fetch('/api/alfred/events');
+    const data = await res.json();
+    const eventos = (data && data.eventos) || [];
+    if(!eventos.length){
+      rows.innerHTML = '<tr><td colspan="6" class="empty">Sem eventos ainda em estacao/event_bus.jsonl.</td></tr>';
+    } else {
+      rows.innerHTML = eventos.slice().reverse().map(function(e){
+        return '<tr>'
+          + '<td class="id">' + (e.id||'') + '</td>'
+          + '<td class="ts">' + fmtTs(e.ts) + '</td>'
+          + '<td class="origem">' + (e.origem||'') + '</td>'
+          + '<td class="tipo">' + (e.tipo||'') + '</td>'
+          + '<td class="destino">' + (e.destino||'') + '</td>'
+          + '<td><pre class="payload">' + JSON.stringify(e.payload||{}, null, 0) + '</pre></td>'
+          + '</tr>';
+      }).join('');
+    }
+    status.textContent = eventos.length + ' evento(s) — atualizado ' + new Date().toLocaleTimeString('pt-PT');
+  }catch(err){
+    status.textContent = 'erro a carregar: ' + err;
+  }
+}
+document.getElementById('btn-refresh').addEventListener('click', load);
+load();
+setInterval(load, 15000);
+</script>
+</body>
+</html>
