@@ -122,6 +122,25 @@ def db():
     return cx
 
 
+# === EVENT BUS (minimo, so-aditivo, JSON Lines) ===
+EVENT_BUS_PATH = os.path.join(BASE, "estacao", "event_bus.jsonl")
+
+def emit_event(origem, tipo, payload, destino="*"):
+    """Escreve um evento em estacao/event_bus.jsonl. Nunca reescreve nem apaga linhas, so append."""
+    import uuid
+    evento = {
+        "id": str(uuid.uuid4())[:8],
+        "ts": int(time.time()),
+        "origem": origem,
+        "tipo": tipo,
+        "payload": payload,
+        "destino": destino
+    }
+    os.makedirs(os.path.dirname(EVENT_BUS_PATH), exist_ok=True)
+    with open(EVENT_BUS_PATH, "a") as f:
+        f.write(json.dumps(evento, ensure_ascii=False) + "\n")
+
+
 def init_db():
     cx = db()
     cx.executescript("""
@@ -244,6 +263,7 @@ def entry():
         cx.close()
     conv = f" ({original:.2f} {currency} -> {amount:.2f} USD)" if currency == "KZ" else ""
     print(f"ENTRY {kind} {amount} ({origin}) -> capital {b['capital']}{conv}")
+    emit_event("temspest-ai-os.r4-financeiro", "entry.registado", {"origem": origin, "valor_usd": amount}, destino="*")
     return jsonify({"ok": True, **b})
 
 
@@ -1124,6 +1144,8 @@ def video_hype():
             cx.commit(); cx.close()
     except Exception:
         pass
+    n_cortes_reais = sum(1 for o in out if "file" in o)
+    emit_event("temspest-ai-os.r1-criacao", "video.hype.gerado", {"n_cortes": n_cortes_reais}, destino="temspest-ai-os.r4-financeiro")
     return jsonify({"ok": True, "gerados": len(out), "pasta": HYPE_DIR, "detalhes": out[:6],
                     "msg": f"{len(out)} cortes de hype gerados em estacao/secretaria/sala_criacao/hype/ — aguardam tua aprovacao para publicar."})
 
