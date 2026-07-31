@@ -422,6 +422,16 @@ async function ler(){
 }
 ler(); setInterval(ler,6000);
 
+/* Lê a resposta da estação sem nunca engolir o motivo real da falha.
+   Um 500 do Flask vem em HTML, não em JSON — é isso que dava a mensagem
+   genérica que nos deixou às cegas quando a chave da API estava truncada. */
+async function lerJSON(r){
+  let d=null;
+  try{ d=await r.json(); }catch(err){ d=null; }
+  if(d && typeof d==='object') return d;
+  return {erro:'A estação respondeu HTTP '+r.status+' em formato inesperado. Vê o station.err para o motivo.'};
+}
+
 /* ═══ ponto 10: overlay de password ═══ */
 const passwordOverlay=document.getElementById('passwordOverlay');
 const passwordInput=document.getElementById('passwordInput');
@@ -496,10 +506,13 @@ btnConfirmar.addEventListener('click', async ()=>{
   btnConfirmar.disabled=true; btnConfirmar.textContent='a confirmar…';
   try{
     const r=await fetch('/api/alfred/confirmar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
-    const d=await r.json();
+    const d=await lerJSON(r);
     fecharModal();
-    if(d.historico) historico=d.historico;
-    mostrarResposta(d.resposta||'');
+    if(d.erro){ mostrarResposta(d.erro); }
+    else{
+      if(d.historico) historico=d.historico;
+      mostrarResposta(d.resposta||'');
+    }
   }catch(err){
     fecharModal();
     mostrarResposta('Não consegui confirmar essa ação — a estação está ligada?');
@@ -534,9 +547,9 @@ entrada.addEventListener('keydown', async e=>{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({mensagem, historico})
     });
-    const d=await r.json();
+    const d=await lerJSON(r);
     if(d.erro){
-      mostrarResposta('Erro: '+d.erro);
+      mostrarResposta(d.erro);
     } else if(d.pendente){
       abrirModal(d.pendente);
       if(d.resposta) mostrarResposta(d.resposta);
