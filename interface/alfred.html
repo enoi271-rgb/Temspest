@@ -65,6 +65,9 @@
   .fev-ts{color:var(--mist-dim);font-size:9px;}
   .fev-route{font-size:9px;color:var(--mist-dim);margin-top:2px;}
   .vazio{font-size:10.5px;color:var(--mist-dim);line-height:1.6;}
+  .nm.sem{color:var(--mist-dim);}
+  .legenda{font-size:8.5px;line-height:1.6;color:var(--mist-dim);margin-top:11px;
+    padding-top:9px;border-top:1px solid rgba(255,255,255,.05);}
 
   .speak{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:7;
     display:flex;align-items:center;gap:10px;
@@ -140,11 +143,9 @@
   </div>
 
   <div class="sidepanel" data-panel="divisoes">
-    <div class="r-title">Agentes e divisões</div>
-    <div class="row"><span class="dot on"></span><span class="nm">TEMSPEST AI OS</span><span class="nt">9 salas</span></div>
-    <div class="row"><span class="dot off"></span><span class="nm">Casa</span><span class="nt">vazio</span></div>
-    <div class="row"><span class="dot on"></span><span class="nm">R1 Criação</span><span class="nt">—</span></div>
-    <div class="row"><span class="dot on"></span><span class="nm">R4 Financeiro</span><span class="nt">—</span></div>
+    <div class="r-title">Divisões</div>
+    <div id="divisoes"><div class="vazio">A ler…</div></div>
+    <div class="legenda">Ponto aceso = atividade nos últimos 15 min.<br>Lido dos últimos 60 eventos do Event Bus.</div>
   </div>
 
   <div class="sidepanel" data-panel="tiers">
@@ -380,6 +381,39 @@ function quando(ts){const s=Math.floor(Date.now()/1000)-ts; if(s<60)return 'agor
 
 let vistos=new Set(), primeira=true;
 
+/* O painel das divisões não inventa estado: tudo o que mostra sai dos
+   eventos reais. Uma divisão sem eventos diz "sem registo", não fica
+   com a luz acesa a fingir que está viva. */
+const RECENTE=15*60; // segundos
+
+function pintarDivisoes(eventos){
+  const estado={};
+  for(const e of eventos){
+    const toca=new Set();
+    for(const campo of ['origem','destino']){
+      const v=e[campo];
+      if(!v||v==='*') continue;
+      const d=String(v).split('.').pop();
+      if(DIV[d]) toca.add(d);
+    }
+    for(const d of toca){
+      const s=estado[d]||(estado[d]={n:0,ts:0});
+      s.n++;
+      if((e.ts||0)>s.ts) s.ts=e.ts||0;
+    }
+  }
+
+  const agora=Math.floor(Date.now()/1000);
+  document.getElementById('divisoes').innerHTML=Object.keys(DIV).map(d=>{
+    const s=estado[d];
+    const aceso=!!s && (agora-s.ts)<RECENTE;
+    const nota=s ? (quando(s.ts)+' · '+s.n+(s.n===1?' evento':' eventos')) : 'sem registo';
+    return '<div class="row"><span class="dot '+(aceso?'on':'off')+'"></span>'+
+      '<span class="nm'+(s?'':' sem')+'">'+esc(DIV[d])+'</span>'+
+      '<span class="nt">'+esc(nota)+'</span></div>';
+  }).join('');
+}
+
 function pintar(eventos){
   const host=document.getElementById('feed');
   if(!eventos.length){
@@ -414,10 +448,14 @@ async function ler(){
     if(!Array.isArray(d.eventos)) throw new Error('formato');
     if(corAlvo===CORES.alerta) corAlvo=CORES.repouso.slice();
     pintar(d.eventos);
+    pintarDivisoes(d.eventos);
   }catch(err){
     corAlvo=CORES.alerta.slice(); trabalhoT=performance.now();
     document.getElementById('feed').innerHTML=
       '<div class="vazio">Não consigo ler o Event Bus. A estação está ligada?</div>';
+    /* Sem leitura, o painel assume que não sabe — não deixa estado velho no ecrã. */
+    document.getElementById('divisoes').innerHTML=
+      '<div class="vazio">Sem ligação ao Event Bus — não sei o estado das divisões.</div>';
   }
 }
 ler(); setInterval(ler,6000);
