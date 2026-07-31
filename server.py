@@ -24,6 +24,9 @@ Endpoints principais:
 """
 import json, os, sqlite3, threading, time, datetime
 
+from dotenv import load_dotenv
+load_dotenv()
+
 try:
     for line in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')):
         line = line.strip()
@@ -34,6 +37,7 @@ except FileNotFoundError:
     pass
 
 from flask import Flask, request, jsonify, Response, send_from_directory
+from alfred_bridge import alfred_bp
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE, "finance.db")
@@ -113,6 +117,8 @@ IG_USER_ID = os.environ.get("IG_USER_ID", "")
 YT_API_KEY = os.environ.get("YT_API_KEY", "")
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24).hex())
+app.register_blueprint(alfred_bp)
 _lock = threading.Lock()
 
 

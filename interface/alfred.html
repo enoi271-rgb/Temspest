@@ -6,386 +6,554 @@
 <title>Alfred</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,600;1,300&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B0D10;
-    --slate:#141A21;
-    --slate-hi:#1C242E;
-    --line:#232C37;
-    --mist:#8B98A8;
-    --mist-dim:#5A6674;
-    --particle:#C8D4E3;
-    --signal:#E8B448;
-    --breach:#C4564A;
-    --serif:'Spectral',Georgia,serif;
-    --sans:'IBM Plex Sans',system-ui,sans-serif;
-    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --ink:#050608; --line:rgba(255,255,255,.09); --mist:#8B98A8; --mist-dim:#4E5A64;
+    --serif:'Spectral',Georgia,serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
   }
   *{box-sizing:border-box;margin:0;}
-  html{background:var(--ink);}
-  body{
-    background:var(--ink);color:var(--mist);font-family:var(--sans);
-    min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased;
-  }
-  ::selection{background:var(--signal);color:var(--ink);}
-  :focus-visible{outline:2px solid var(--particle);outline-offset:3px;}
+  html,body{background:var(--ink);height:100%;overflow:hidden;}
+  body{color:var(--mist);font-family:var(--mono);-webkit-font-smoothing:antialiased;}
+  :focus-visible{outline:1px solid var(--mist);outline-offset:3px;}
 
-  .shell{max-width:1240px;margin:0 auto;padding:28px 22px 64px;}
+  .stage{position:relative;width:100%;height:100vh;}
+  #cosmos{position:absolute;inset:0;display:block;width:100%;height:100%;}
 
-  /* ── cabeçalho ─────────────────────────────── */
-  header{
-    display:flex;justify-content:space-between;align-items:baseline;
-    gap:20px;flex-wrap:wrap;
-    padding-bottom:18px;margin-bottom:26px;
-    border-bottom:1px solid var(--line);
-  }
-  .mark{font-family:var(--serif);font-weight:300;font-size:34px;letter-spacing:.01em;color:#E4EAF1;line-height:1;}
-  .mark em{font-style:italic;color:var(--mist);}
-  .role{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mist-dim);margin-top:7px;}
-  .clock{font-family:var(--mono);font-size:11px;color:var(--mist-dim);text-align:right;}
-  .clock b{display:block;color:var(--mist);font-weight:500;font-size:12px;}
+  .id{position:absolute;top:22px;left:26px;z-index:5;pointer-events:none;}
+  .id .nome{font-family:var(--serif);font-weight:300;font-size:15px;letter-spacing:.14em;
+    color:rgba(255,255,255,.55);text-transform:uppercase;}
+  .id .hora{font-size:10.5px;letter-spacing:.14em;color:var(--mist-dim);margin-top:3px;}
 
-  /* ── grelha principal ──────────────────────── */
-  .grid{display:grid;grid-template-columns:1fr 372px;gap:22px;align-items:start;}
-  @media(max-width:900px){.grid{grid-template-columns:1fr;}}
+  .tabstrip{position:absolute;top:80px;right:0;z-index:6;display:flex;flex-direction:column;gap:2px;}
+  .tab{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--mist-dim);background:rgba(6,9,12,.6);border:1px solid var(--line);border-right:none;
+    padding:10px 13px;cursor:pointer;border-radius:3px 0 0 3px;
+    transition:color .15s,background .15s;text-align:right;}
+  .tab:hover{color:#D8E2E8;}
+  .tab.active{color:#fff;background:rgba(6,9,12,.9);border-color:rgba(255,255,255,.22);}
 
-  /* ── nuvem (assinatura) ────────────────────── */
-  .cloud-frame{position:relative;background:#090B0E;border:1px solid var(--line);overflow:hidden;}
-  #cloud{display:block;width:100%;height:auto;}
-  .cloud-state{
-    position:absolute;left:18px;bottom:16px;
-    font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--mist-dim);
-  }
-  .cloud-state b{color:var(--particle);font-weight:500;}
-  .cloud-count{
-    position:absolute;right:18px;bottom:16px;
-    font-family:var(--mono);font-size:10.5px;color:var(--mist-dim);
+  .sidepanel{position:absolute;top:80px;right:92px;z-index:5;width:238px;
+    background:rgba(6,9,12,.86);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:3px;padding:16px 17px;
+    opacity:0;transform:translateX(8px);pointer-events:none;
+    transition:opacity .22s ease,transform .22s ease;}
+  .sidepanel.show{opacity:1;transform:translateX(0);pointer-events:auto;}
+  @media(max-width:640px){
+    .sidepanel{right:70px;width:min(230px,58vw);}
+    .tab{padding:9px 10px;font-size:9px;}
   }
 
-  /* ── painéis ───────────────────────────────── */
-  .panel{background:var(--slate);border:1px solid var(--line);padding:18px 18px 20px;}
-  .panel + .panel{margin-top:18px;}
-  .panel-title{
-    font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
-    color:var(--mist-dim);margin-bottom:14px;
-  }
+  .r-title{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--mist-dim);margin-bottom:10px;}
+  .row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,.05);}
+  .row:last-child{border:none;}
+  .dot{width:5px;height:5px;border-radius:50%;flex:none;}
+  .dot.on{background:#fff;box-shadow:0 0 6px rgba(255,255,255,.7);}
+  .dot.off{background:var(--mist-dim);}
+  .nm{flex:1;color:#D8E2E8;}
+  .nt{font-size:9px;color:var(--mist-dim);}
 
-  /* tiers — encoda o Artigo VII, não decora */
-  .tiers{display:flex;flex-direction:column;gap:1px;}
-  .tier{
-    display:grid;grid-template-columns:26px 1fr auto;gap:11px;align-items:baseline;
-    padding:9px 10px;background:#101620;
-  }
-  .tier-n{font-family:var(--serif);font-size:17px;color:var(--mist-dim);line-height:1;}
-  .tier-t{font-size:12.5px;color:var(--mist);}
-  .tier-c{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mist-dim);}
-  .tier.live{background:var(--slate-hi);}
-  .tier.live .tier-n{color:var(--particle);}
-  .tier.live .tier-t{color:#E4EAF1;}
-  .tier[data-t="4"] .tier-c{color:var(--breach);}
+  .tier-row{display:grid;grid-template-columns:14px 1fr auto;gap:8px;padding:5px 0;font-size:10.5px;border-bottom:1px solid rgba(255,255,255,.05);}
+  .tier-row:last-child{border:none;}
+  .tier-row b{font-family:var(--serif);color:var(--mist-dim);font-weight:300;}
+  .tier-row .c{font-size:8.5px;color:var(--mist-dim);text-transform:uppercase;letter-spacing:.05em;}
 
-  /* eventos */
-  .events{max-height:396px;overflow-y:auto;margin:-4px -4px 0;padding:4px;}
-  .events::-webkit-scrollbar{width:7px;}
-  .events::-webkit-scrollbar-thumb{background:var(--line);}
-  .ev{padding:11px 0;border-bottom:1px solid #1A222B;}
-  .ev:last-child{border-bottom:none;}
-  .ev-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
-  .ev-type{font-family:var(--mono);font-size:12px;color:var(--signal);letter-spacing:-.01em;}
-  .ev-ts{font-family:var(--mono);font-size:10px;color:var(--mist-dim);white-space:nowrap;}
-  .ev-route{font-family:var(--mono);font-size:10px;color:var(--mist-dim);margin-top:4px;}
-  .ev-route i{font-style:normal;color:var(--mist);}
-  .ev-payload{
-    font-family:var(--mono);font-size:10.5px;color:var(--mist);
-    margin-top:6px;padding:7px 9px;background:#0D1218;border-left:2px solid var(--line);
-    word-break:break-word;
-  }
+  .fev{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:10.5px;}
+  .fev:last-child{border:none;}
+  .fev-top{display:flex;justify-content:space-between;gap:8px;}
+  .fev-type{color:#D8E2E8;}
+  .fev-ts{color:var(--mist-dim);font-size:9px;}
+  .fev-route{font-size:9px;color:var(--mist-dim);margin-top:2px;}
+  .vazio{font-size:10.5px;color:var(--mist-dim);line-height:1.6;}
 
-  /* estados vazio / erro — direção, não lamento */
-  .note{font-size:12.5px;color:var(--mist-dim);line-height:1.65;}
-  .note strong{color:var(--mist);font-weight:500;}
-  .note code{font-family:var(--mono);font-size:11.5px;color:var(--particle);}
-  .note.err{color:#D89B92;}
+  .speak{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:7;
+    display:flex;align-items:center;gap:10px;
+    background:rgba(6,9,12,.66);border:1px solid var(--line);border-radius:20px;
+    padding:9px 14px 9px 16px;width:min(430px,74vw);backdrop-filter:blur(6px);}
+  .speak input{flex:1;background:transparent;border:none;color:#E8F0F2;font-family:var(--serif);
+    font-style:italic;font-size:13px;outline:none;}
+  .speak input::placeholder{color:var(--mist-dim);font-style:italic;}
+  .speak input:disabled{opacity:.45;}
+  .speak-dot{width:6px;height:6px;border-radius:50%;background:var(--mist-dim);flex:none;transition:background .3s,box-shadow .3s;}
+  .speak-dot.on{background:#9FE3B0;box-shadow:0 0 6px rgba(159,227,176,.7);}
+  .speak-dot.busy{background:#E8C458;box-shadow:0 0 6px rgba(232,196,88,.7);}
 
-  /* rodapé */
-  .foot{
-    margin-top:30px;padding-top:16px;border-top:1px solid var(--line);
-    font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--mist-dim);
-    display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;text-transform:uppercase;
-  }
-  .foot em{font-style:normal;color:var(--mist);}
+  /* ── ponto 8: caixa de resposta do Alfred ── */
+  .resposta{position:absolute;bottom:78px;left:50%;transform:translateX(-50%) translateY(6px);
+    z-index:7;width:min(430px,74vw);max-height:34vh;overflow-y:auto;
+    background:rgba(6,9,12,.78);backdrop-filter:blur(8px);border:1px solid var(--line);
+    border-radius:12px;padding:14px 16px;font-family:var(--serif);font-size:13px;
+    line-height:1.55;color:#E8F0F2;opacity:0;pointer-events:none;
+    transition:opacity .22s ease,transform .22s ease;white-space:pre-wrap;}
+  .resposta.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+  .resposta::-webkit-scrollbar{width:5px;}
+  .resposta::-webkit-scrollbar-thumb{background:var(--mist-dim);border-radius:3px;}
 
-  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+  /* ── ponto 9: modal de confirmação Tier 3/4 ── */
+  .modal-overlay{position:fixed;inset:0;z-index:30;background:rgba(2,3,4,.72);backdrop-filter:blur(3px);
+    display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;
+    transition:opacity .2s ease;}
+  .modal-overlay.show{opacity:1;pointer-events:auto;}
+  .modal{width:min(380px,86vw);background:rgba(10,13,17,.96);border:1px solid rgba(255,255,255,.14);
+    border-radius:10px;padding:24px 26px;transform:translateY(6px);transition:transform .2s ease;}
+  .modal-overlay.show .modal{transform:translateY(0);}
+  .modal-tier{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--mist-dim);margin-bottom:12px;}
+  .modal-desc{font-family:var(--serif);font-size:14.5px;line-height:1.6;color:#E8F0F2;margin-bottom:22px;}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+  .modal-actions button{font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+    padding:9px 16px;border-radius:5px;cursor:pointer;border:1px solid var(--line);
+    background:transparent;color:var(--mist);transition:background .15s,color .15s;}
+  .modal-actions button:hover{color:#fff;}
+  .modal-actions .confirmar{background:#E8B448;border-color:#E8B448;color:#141517;font-weight:600;}
+  .modal-actions .confirmar:hover{background:#f0c169;color:#141517;}
+
+  /* ── ponto 10: overlay de password ── */
+  .password-overlay{position:fixed;inset:0;z-index:40;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;
+    transition:opacity .25s ease;}
+  .password-overlay.show{opacity:1;pointer-events:auto;}
+  .password-box{width:min(300px,84vw);text-align:center;}
+  .password-box .nome{font-family:var(--serif);font-weight:300;font-size:19px;letter-spacing:.14em;
+    color:rgba(255,255,255,.7);text-transform:uppercase;margin-bottom:26px;}
+  .password-box input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--line);
+    border-radius:20px;padding:10px 16px;color:#E8F0F2;font-family:var(--serif);font-style:italic;
+    font-size:13px;outline:none;text-align:center;}
+  .password-box input::placeholder{color:var(--mist-dim);font-style:italic;}
+  .password-erro{font-size:10.5px;color:#C4564A;margin-top:12px;min-height:14px;}
+
+  @media(prefers-reduced-motion:reduce){.sidepanel{transition:none;}}
 </style>
 </head>
 <body>
-<div class="shell">
+<div class="stage" id="stage">
+  <canvas id="cosmos"></canvas>
 
-  <header>
-    <div>
-      <div class="mark">Alfred<em>.</em></div>
-      <div class="role">Supremo Mordomo &middot; Ecossistema TEMSPEST</div>
-    </div>
-    <div class="clock">
-      <b id="hora">—</b>
-      <span id="data">—</span>
-    </div>
-  </header>
-
-  <div class="grid">
-
-    <div>
-      <div class="cloud-frame">
-        <canvas id="cloud" width="1400" height="820" aria-label="Representação de Alfred: nuvem de partículas contida por um limite invisível"></canvas>
-        <div class="cloud-state">Estado <b id="estado">em repouso</b></div>
-        <div class="cloud-count" id="contagem">—</div>
-      </div>
-
-      <div class="panel" style="margin-top:18px;">
-        <div class="panel-title">Tiers de autonomia &middot; Artigo VII</div>
-        <div class="tiers">
-          <div class="tier live" data-t="1"><span class="tier-n">1</span><span class="tier-t">Informar, analisar, sugerir</span><span class="tier-c">não executa</span></div>
-          <div class="tier" data-t="2"><span class="tier-n">2</span><span class="tier-t">Reversível: notas, rascunhos, leitura</span><span class="tier-c">sem confirmar</span></div>
-          <div class="tier" data-t="3"><span class="tier-n">3</span><span class="tier-t">Moderado: agendar, comunicação de rotina</span><span class="tier-c">1.ª vez de cada tipo</span></div>
-          <div class="tier" data-t="4"><span class="tier-n">4</span><span class="tier-t">Dinheiro ou dados sensíveis</span><span class="tier-c">confirmar sempre</span></div>
-        </div>
-        <div class="note" style="margin-top:13px;">
-          Ações irreversíveis — enviar, publicar, apagar, pagar, partilhar dados de outra pessoa — pedem confirmação em qualquer Tier. Sem exceção por urgência.
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <div class="panel">
-        <div class="panel-title">Event Bus &middot; o que as divisões disseram</div>
-        <div class="events" id="lista">
-          <div class="note">A ler o Event Bus…</div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Origem dos dados</div>
-        <div class="note">
-          Tudo o que aparece aqui vem de <code>estacao/event_bus.jsonl</code>. Nada é estimado nem preenchido — se uma divisão não escreveu, não há linha.
-        </div>
-      </div>
-    </div>
-
+  <div class="id">
+    <div class="nome">Alfred</div>
+    <div class="hora" id="relogio">—:—</div>
   </div>
 
-  <div class="foot">
-    <span>A nuvem move-se &middot; a bolha aguenta &middot; a alma permanece</span>
-    <span>Eventos lidos <em id="total">0</em></span>
+  <div class="tabstrip">
+    <div class="tab" data-p="divisoes" role="button" tabindex="0">Divisões</div>
+    <div class="tab" data-p="tiers" role="button" tabindex="0">Tiers</div>
+    <div class="tab" data-p="bus" role="button" tabindex="0">Event Bus</div>
   </div>
 
+  <div class="sidepanel" data-panel="divisoes">
+    <div class="r-title">Agentes e divisões</div>
+    <div class="row"><span class="dot on"></span><span class="nm">TEMSPEST AI OS</span><span class="nt">9 salas</span></div>
+    <div class="row"><span class="dot off"></span><span class="nm">Casa</span><span class="nt">vazio</span></div>
+    <div class="row"><span class="dot on"></span><span class="nm">R1 Criação</span><span class="nt">—</span></div>
+    <div class="row"><span class="dot on"></span><span class="nm">R4 Financeiro</span><span class="nt">—</span></div>
+  </div>
+
+  <div class="sidepanel" data-panel="tiers">
+    <div class="r-title">Tiers &middot; Artigo VII</div>
+    <div class="tier-row"><b>1</b><span>Informar / sugerir</span><span class="c">livre</span></div>
+    <div class="tier-row"><b>2</b><span>Notas, rascunhos</span><span class="c">sem confirmar</span></div>
+    <div class="tier-row"><b>3</b><span>Rotina, agendar</span><span class="c">1.ª vez</span></div>
+    <div class="tier-row"><b>4</b><span>Dinheiro / dados</span><span class="c">confirmar sempre</span></div>
+  </div>
+
+  <div class="sidepanel" data-panel="bus">
+    <div class="r-title">Event Bus</div>
+    <div id="feed"><div class="vazio">A ler…</div></div>
+  </div>
+
+  <div class="resposta" id="resposta"></div>
+
+  <div class="speak">
+    <input type="text" id="entrada" placeholder="fala com o Alfred…" aria-label="Falar com o Alfred">
+    <span class="speak-dot" id="speak-dot" title="ligação à IA por ativar"></span>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-tier" id="modalTier">Tier —</div>
+    <div class="modal-desc" id="modalDesc">—</div>
+    <div class="modal-actions">
+      <button type="button" id="btnRecusar">Não fazer</button>
+      <button type="button" class="confirmar" id="btnConfirmar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="password-overlay" id="passwordOverlay">
+  <div class="password-box">
+    <div class="nome">Alfred</div>
+    <input type="password" id="passwordInput" placeholder="palavra-passe…" aria-label="Palavra-passe">
+    <div class="password-erro" id="passwordErro"></div>
+  </div>
 </div>
 
 <script>
 'use strict';
 
-/* ═══ relógio ═══ */
-const MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 function relogio(){
   const d=new Date();
-  document.getElementById('hora').textContent=
+  document.getElementById('relogio').textContent=
     String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-  document.getElementById('data').textContent=
-    d.getDate()+' '+MESES[d.getMonth()]+' '+d.getFullYear();
 }
-relogio(); setInterval(relogio,20000);
+relogio(); setInterval(relogio,1000);
 
-/* ═══ a nuvem ═══
-   Milhões conceptuais, algumas centenas desenhadas. Cada partícula vive
-   dentro de uma esfera que nunca se desenha — o limite sente-se porque
-   nada o atravessa (Artigo I). */
-const cv=document.getElementById('cloud'), cx=cv.getContext('2d');
+function abrirPainel(tab){
+  const alvo=tab.dataset.p, ativo=tab.classList.contains('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sidepanel').forEach(p=>p.classList.remove('show'));
+  if(!ativo){
+    tab.classList.add('active');
+    document.querySelector('.sidepanel[data-panel="'+alvo+'"]').classList.add('show');
+  }
+}
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>abrirPainel(tab));
+  tab.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); abrirPainel(tab);} });
+});
+
+const cv=document.getElementById('cosmos'), cx=cv.getContext('2d');
 const reduzir=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const N=reduzir?260:620;
-const RAIO=330;
+let W,H,DPR,RAIO;
+
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  W=window.innerWidth; H=window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR;
+  cx.setTransform(DPR,0,0,DPR,0,0);
+  RAIO=Math.min(W,H)*0.30;
+}
+
+/* Amostra a letra, mede a tinta real, e re-mapeia para uma caixa de proporção
+   controlada e centrada — é isto que impede o E de sair alto e estreito. */
+function pontosDaLetra(letra,quantos){
+  const S=520;
+  const off=document.createElement('canvas');
+  off.width=S; off.height=S;
+  const o=off.getContext('2d');
+  o.fillStyle='#fff';
+  o.font='900 '+Math.floor(S*0.78)+'px Arial, Helvetica, sans-serif';
+  o.textAlign='center'; o.textBaseline='middle';
+  o.fillText(letra, S/2, S/2);
+
+  const d=o.getImageData(0,0,S,S).data;
+  const brutos=[];
+  for(let y=0;y<S;y+=2){
+    for(let x=0;x<S;x+=2){
+      if(d[(y*S+x)*4+3]>90) brutos.push([x,y]);
+    }
+  }
+  if(!brutos.length) return [];
+
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(const [x,y] of brutos){
+    if(x<minX)minX=x; if(x>maxX)maxX=x;
+    if(y<minY)minY=y; if(y>maxY)maxY=y;
+  }
+  const lw=maxX-minX||1, lh=maxY-minY||1;
+
+  const altura=Math.min(W,H)*0.46;
+  const escala=altura/lh;
+  const larg=lw*escala;
+
+  const passo=Math.max(1,Math.floor(brutos.length/quantos));
+  const pts=[];
+  for(let i=0;i<brutos.length;i+=passo){
+    const [x,y]=brutos[i];
+    pts.push({
+      x: W/2 - larg/2 + (x-minX)*escala + (Math.random()-0.5)*2,
+      y: H/2 - altura/2 + (y-minY)*escala + (Math.random()-0.5)*2
+    });
+  }
+  return pts;
+}
+
+const N=reduzir?280:680;
 const P=[];
 
-function esferaAleatoria(r){
-  // distribuição uniforme dentro da esfera
-  const u=Math.random(), v=Math.random(), w=Math.random();
-  const theta=u*Math.PI*2, phi=Math.acos(2*v-1), rr=r*Math.cbrt(w);
-  return {
-    x:rr*Math.sin(phi)*Math.cos(theta),
-    y:rr*Math.sin(phi)*Math.sin(theta),
-    z:rr*Math.cos(phi)
-  };
-}
-for(let i=0;i<N;i++){
-  const p=esferaAleatoria(RAIO);
-  P.push({...p,
-    vx:(Math.random()-0.5)*0.34,
-    vy:(Math.random()-0.5)*0.34,
-    vz:(Math.random()-0.5)*0.34,
-    brilho:0.30+Math.random()*0.55,
-    fase:Math.random()*6.28
-  });
+function inicializar(){
+  const alvos=pontosDaLetra('E',N);
+  P.length=0;
+  for(let i=0;i<N;i++){
+    const ang=Math.random()*6.283, r=Math.max(W,H)*0.75*Math.sqrt(Math.random());
+    const alvo=alvos.length?alvos[i%alvos.length]:{x:W/2,y:H/2};
+    const a2=Math.random()*6.283, r2=RAIO*Math.cbrt(Math.random());
+    P.push({
+      x:W/2+Math.cos(ang)*r, y:H/2+Math.sin(ang)*r,
+      tx:alvo.x, ty:alvo.y,
+      dx:Math.cos(a2)*r2, dy:Math.sin(a2)*r2*0.78,
+      vx:(Math.random()-0.5)*0.32, vy:(Math.random()-0.5)*0.32,
+      brilho:0.35+Math.random()*0.55, fase:Math.random()*6.283
+    });
+  }
 }
 
-let modo='repouso';      // repouso | processar | alerta
-let foco=0;              // 0 = disperso, 1 = adensado
-let faiscas=[];          // eventos a atravessar a nuvem
-let girar=0;
+resize(); inicializar();
+window.addEventListener('resize',()=>{ resize(); if(fase==='formar'||fase==='segurar') inicializar(); });
 
-function definirModo(m){
-  if(modo===m)return;
-  modo=m;
-  document.getElementById('estado').textContent=
-    m==='processar'?'a processar':(m==='alerta'?'em alerta':'em repouso');
+let fase = reduzir ? 'cosmos' : 'formar';
+let faseT0=performance.now();
+const DUR={formar:2000,segurar:1100,dispersar:1700};
+
+const CORES={
+  repouso:[210,220,232],
+  'r1-criacao':[120,190,235],
+  'r2-negocios':[217,170,90],
+  'r3-edicao':[150,180,215],
+  'r4-financeiro':[140,210,150],
+  'r5-publicidade':[190,150,225],
+  'r6-web':[110,175,220],
+  'r7-atendimento':[230,170,110],
+  'r8-produtos':[225,205,110],
+  alerta:[224,90,78]
+};
+let corAlvo=CORES.repouso.slice(), corAtual=CORES.repouso.slice(), trabalhoT=-1;
+
+function ativarTrabalho(div){
+  corAlvo=(CORES[div]||CORES.repouso).slice();
+  trabalhoT=performance.now();
+}
+function tickCor(){
+  if(trabalhoT>0 && performance.now()-trabalhoT>4000) corAlvo=CORES.repouso.slice();
+  for(let i=0;i<3;i++) corAtual[i]+=(corAlvo[i]-corAtual[i])*0.03;
 }
 
-function faisca(){
-  const dir=esferaAleatoria(RAIO*0.98);
-  faiscas.push({x:dir.x,y:dir.y,z:dir.z,t:0});
-  definirModo('processar');
-  clearTimeout(faisca._t);
-  faisca._t=setTimeout(()=>definirModo('repouso'),2600);
-}
-
-function desenhar(){
-  const W=cv.width,H=cv.height,CX=W/2,CY=H/2;
+let faisca=-1e9;
+function desenhar(now){
   cx.clearRect(0,0,W,H);
+  tickCor();
+  const cor=corAtual.map(v=>Math.round(v));
+  const dt=now-faseT0;
 
-  const alvoFoco = modo==='processar'?0.55:0;
-  foco += (alvoFoco-foco)*0.035;
-  girar += modo==='processar'?0.0028:0.0011;
+  if(fase==='formar' && dt>DUR.formar){ fase='segurar'; faseT0=now; }
+  else if(fase==='segurar' && dt>DUR.segurar){ fase='dispersar'; faseT0=now; }
+  else if(fase==='dispersar' && dt>DUR.dispersar){ fase='cosmos'; }
 
-  const cor = modo==='alerta'
-    ? [232,180,72]     // signal — muda de cor, nunca colapsa em forma fechada
-    : [200,212,227];   // particle
-
-  const cs=Math.cos(girar), sn=Math.sin(girar);
-  const vel = modo==='processar'?1.9:1;
+  const CX=W/2, CY=H/2;
 
   for(const p of P){
-    p.x+=p.vx*vel; p.y+=p.vy*vel; p.z+=p.vz*vel;
-
-    // o limite invisível: nada sai, mas nada o mostra
-    const d=Math.hypot(p.x,p.y,p.z);
-    if(d>RAIO){
-      const k=RAIO/d;
-      p.x*=k; p.y*=k; p.z*=k;
-      p.vx=-p.vx*0.86; p.vy=-p.vy*0.86; p.vz=-p.vz*0.86;
+    if(fase==='formar'||fase==='segurar'){
+      const k = fase==='formar' ? Math.min(1,dt/DUR.formar) : 1;
+      const e = 1-Math.pow(1-k,3);
+      p.x += (p.tx-p.x)*0.16*e;
+      p.y += (p.ty-p.y)*0.16*e;
+      p.b = fase==='segurar' ? 0.95 : 0.45+e*0.55;
+    } else if(fase==='dispersar'){
+      const k=Math.min(1,(now-faseT0)/DUR.dispersar);
+      p.x += ((CX+p.dx)-p.x)*0.045*k;
+      p.y += ((CY+p.dy)-p.y)*0.045*k;
+      p.b = p.brilho;
+    } else {
+      p.x += p.vx; p.y += p.vy;
+      const ax=p.x-CX, ay=(p.y-CY)/0.78, d=Math.hypot(ax,ay);
+      if(d>RAIO){
+        const k=RAIO/d;
+        p.x=CX+ax*k; p.y=CY+ay*k*0.78;
+        p.vx=-p.vx*0.9; p.vy=-p.vy*0.9;
+      }
+      p.b=p.brilho;
     }
-    // adensamento em direção a um foco temporário
-    if(foco>0.004){ p.x-=p.x*foco*0.010; p.y-=p.y*foco*0.010; p.z-=p.z*foco*0.010; }
 
-    // rotação lenta em Y + projeção com profundidade
-    const rx=p.x*cs - p.z*sn, rz=p.x*sn + p.z*cs;
-    const persp=760/(760+rz+RAIO);
-    const sx=CX+rx*persp, sy=CY+p.y*persp;
-
-    p.fase+=0.014;
-    const cintila=0.72+Math.sin(p.fase)*0.28;
-    const a=Math.max(0,Math.min(1,p.brilho*cintila*(persp*0.95)));
-    const r=Math.max(0.45,1.75*persp);
-
+    p.fase+=0.013;
+    const a=Math.max(0,Math.min(1,(p.b||p.brilho)*(0.7+Math.sin(p.fase)*0.3)));
     cx.fillStyle='rgba('+cor[0]+','+cor[1]+','+cor[2]+','+a.toFixed(3)+')';
-    cx.beginPath(); cx.arc(sx,sy,r,0,6.283); cx.fill();
+    cx.beginPath(); cx.arc(p.x,p.y,fase==='segurar'?2:1.6,0,6.283); cx.fill();
   }
 
-  // faíscas: cada evento novo atravessa a nuvem até ao centro
-  faiscas=faiscas.filter(f=>f.t<1);
-  for(const f of faiscas){
-    f.t+=0.016;
-    const e=1-Math.pow(1-f.t,3);
-    const x=f.x*(1-e), y=f.y*(1-e), z=f.z*(1-e);
-    const rx=x*cs - z*sn, rz=x*sn + z*cs;
-    const persp=760/(760+rz+RAIO);
-    const sx=CX+rx*persp, sy=CY+y*persp;
-    const fade=Math.sin(f.t*Math.PI);
-    cx.fillStyle='rgba(232,180,72,'+(0.92*fade).toFixed(3)+')';
-    cx.beginPath(); cx.arc(sx,sy,3.1*persp,0,6.283); cx.fill();
-    cx.fillStyle='rgba(232,180,72,'+(0.16*fade).toFixed(3)+')';
-    cx.beginPath(); cx.arc(sx,sy,11*persp,0,6.283); cx.fill();
+  const df=(now-faisca)/1200;
+  if(fase==='cosmos' && df>=0 && df<1){
+    const y=H*0.15+df*H*0.7;
+    cx.fillStyle='rgba('+cor[0]+','+cor[1]+','+cor[2]+','+(0.10*(1-df))+')';
+    cx.fillRect(0,y-40,W,80);
   }
 
   requestAnimationFrame(desenhar);
 }
-document.getElementById('contagem').textContent=N+' partículas visíveis';
-desenhar();
+requestAnimationFrame(desenhar);
 
-/* ═══ Event Bus ═══ */
-const DIVISOES={
-  'r1-criacao':'R1 Criação','r2-negocios':'R2 Negócios','r3-edicao':'R3 Edição',
-  'r4-financeiro':'R4 Financeiro','r5-publicidade':'R5 Publicidade',
-  'r6-web':'R6 Web','r7-atendimento':'R7 Atendimento','r8-produtos':'R8 Produtos'
-};
-function nome(ref){
-  if(!ref||ref==='*')return 'qualquer divisão';
-  const parte=String(ref).split('.').pop();
-  return DIVISOES[parte]||parte;
-}
-function quando(ts){
-  const s=Math.floor(Date.now()/1000)-ts;
-  if(s<60)return 'agora';
-  if(s<3600)return Math.floor(s/60)+' min';
-  if(s<86400)return Math.floor(s/3600)+' h';
-  return Math.floor(s/86400)+' d';
-}
+/* ═══ Event Bus real ═══ */
+const DIV={'r1-criacao':'R1 Criação','r2-negocios':'R2 Negócios','r3-edicao':'R3 Edição',
+  'r4-financeiro':'R4 Financeiro','r5-publicidade':'R5 Publicidade','r6-web':'R6 Web',
+  'r7-atendimento':'R7 Atendimento','r8-produtos':'R8 Produtos'};
+function nomeDiv(r){ if(!r||r==='*')return 'qualquer divisão'; const p=String(r).split('.').pop(); return DIV[p]||p; }
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function quando(ts){const s=Math.floor(Date.now()/1000)-ts; if(s<60)return 'agora'; if(s<3600)return Math.floor(s/60)+' min'; if(s<86400)return Math.floor(s/3600)+' h'; return Math.floor(s/86400)+' d';}
 
 let vistos=new Set(), primeira=true;
 
 function pintar(eventos){
-  const host=document.getElementById('lista');
-  document.getElementById('total').textContent=eventos.length;
-
+  const host=document.getElementById('feed');
   if(!eventos.length){
-    host.innerHTML='<div class="note"><strong>Sem eventos ainda.</strong> '+
-      'Regista um movimento no razão ou gera hype de kills — a linha aparece aqui '+
-      'no momento em que a divisão a escrever.</div>';
+    host.innerHTML='<div class="vazio">Sem eventos ainda. Regista um movimento no razão ou gera hype — a linha aparece aqui.</div>';
     return;
   }
-
-  host.innerHTML=eventos.slice().reverse().map(e=>{
-    const carga=Object.entries(e.payload||{})
-      .map(([k,v])=>esc(k)+': '+esc(typeof v==='object'?JSON.stringify(v):v))
-      .join('   ');
-    return '<div class="ev">'+
-      '<div class="ev-top"><span class="ev-type">'+esc(e.tipo||'—')+'</span>'+
-      '<span class="ev-ts">'+quando(e.ts||0)+'</span></div>'+
-      '<div class="ev-route"><i>'+esc(nome(e.origem))+'</i> → '+esc(nome(e.destino))+'</div>'+
-      (carga?'<div class="ev-payload">'+carga+'</div>':'')+
-    '</div>';
+  host.innerHTML=eventos.slice(-12).reverse().map(e=>{
+    const carga=Object.entries(e.payload||{}).map(([k,v])=>esc(k)+': '+esc(v)).join('   ');
+    return '<div class="fev"><div class="fev-top"><span class="fev-type">'+esc(e.tipo||'—')+'</span>'+
+      '<span class="fev-ts">'+quando(e.ts||0)+'</span></div>'+
+      '<div class="fev-route">'+esc(nomeDiv(e.origem))+' → '+esc(nomeDiv(e.destino))+(carga?' · '+carga:'')+'</div></div>';
   }).join('');
 
-  // faísca só para eventos novos, nunca no primeiro carregamento
   for(const e of eventos){
     if(e.id && !vistos.has(e.id)){
       vistos.add(e.id);
-      if(!primeira) faisca();
+      if(!primeira){
+        faisca=performance.now();
+        const d=String(e.origem||'').split('.').pop();
+        ativarTrabalho(d);
+      }
     }
   }
   primeira=false;
 }
 
-function falhou(msg){
-  definirModo('alerta');
-  document.getElementById('lista').innerHTML=
-    '<div class="note err"><strong>Não consigo ler o Event Bus.</strong> '+esc(msg)+'</div>'+
-    '<div class="note" style="margin-top:9px;">Confirma que a estação está ligada — '+
-    '<code>bash ~/TEMSPEST_STATION/start_tunnel.sh restart</code></div>';
-}
-
 async function ler(){
   try{
     const r=await fetch('/api/alfred/events',{cache:'no-store'});
-    if(!r.ok) throw new Error('o servidor respondeu '+r.status);
+    if(!r.ok) throw new Error(r.status);
     const d=await r.json();
-    if(!Array.isArray(d.eventos)) throw new Error('resposta sem lista de eventos');
-    if(modo==='alerta') definirModo('repouso');
+    if(!Array.isArray(d.eventos)) throw new Error('formato');
+    if(corAlvo===CORES.alerta) corAlvo=CORES.repouso.slice();
     pintar(d.eventos);
   }catch(err){
-    falhou(err.message||'a estação não respondeu');
+    corAlvo=CORES.alerta.slice(); trabalhoT=performance.now();
+    document.getElementById('feed').innerHTML=
+      '<div class="vazio">Não consigo ler o Event Bus. A estação está ligada?</div>';
   }
 }
 ler(); setInterval(ler,6000);
+
+/* ═══ ponto 10: overlay de password ═══ */
+const passwordOverlay=document.getElementById('passwordOverlay');
+const passwordInput=document.getElementById('passwordInput');
+const passwordErro=document.getElementById('passwordErro');
+
+async function verificarEstado(){
+  try{
+    const r=await fetch('/api/alfred/estado',{cache:'no-store'});
+    const d=await r.json();
+    if(d.precisa_senha){
+      passwordOverlay.classList.add('show');
+      setTimeout(()=>passwordInput.focus(),50);
+    } else {
+      passwordOverlay.classList.remove('show');
+    }
+  }catch(err){ /* sem estação, não bloqueia a UI local */ }
+}
+verificarEstado();
+
+passwordInput.addEventListener('keydown', async e=>{
+  if(e.key!=='Enter') return;
+  const senha=passwordInput.value;
+  if(!senha) return;
+  passwordErro.textContent='';
+  try{
+    const r=await fetch('/api/alfred/login',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:senha})
+    });
+    const d=await r.json();
+    if(d.ok){
+      passwordOverlay.classList.remove('show');
+      passwordInput.value='';
+    } else {
+      passwordErro.textContent='palavra-passe incorreta.';
+      passwordInput.value='';
+      passwordInput.focus();
+    }
+  }catch(err){
+    passwordErro.textContent='sem ligação à estação.';
+  }
+});
+
+/* ═══ ponto 9: modal de confirmação Tier 3/4 ═══ */
+const modalOverlay=document.getElementById('modalOverlay');
+const modalTier=document.getElementById('modalTier');
+const modalDesc=document.getElementById('modalDesc');
+const btnConfirmar=document.getElementById('btnConfirmar');
+const btnRecusar=document.getElementById('btnRecusar');
+let pendenteAtual=null;
+
+function abrirModal(pendente){
+  pendenteAtual=pendente;
+  modalTier.textContent='Tier '+pendente.tier+' · confirmação necessária';
+  modalDesc.textContent=pendente.descricao||('Executar '+pendente.nome);
+  modalOverlay.classList.add('show');
+}
+function fecharModal(){
+  modalOverlay.classList.remove('show');
+  pendenteAtual=null;
+}
+btnRecusar.addEventListener('click', async ()=>{
+  if(!pendenteAtual) return fecharModal();
+  const id=pendenteAtual.id;
+  fecharModal();
+  try{ await fetch('/api/alfred/recusar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}); }
+  catch(err){}
+});
+btnConfirmar.addEventListener('click', async ()=>{
+  if(!pendenteAtual) return;
+  const id=pendenteAtual.id;
+  btnConfirmar.disabled=true; btnConfirmar.textContent='a confirmar…';
+  try{
+    const r=await fetch('/api/alfred/confirmar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+    const d=await r.json();
+    fecharModal();
+    if(d.historico) historico=d.historico;
+    mostrarResposta(d.resposta||'');
+  }catch(err){
+    fecharModal();
+    mostrarResposta('Não consegui confirmar essa ação — a estação está ligada?');
+  }finally{
+    btnConfirmar.disabled=false; btnConfirmar.textContent='Confirmar';
+  }
+});
+
+/* ═══ ponto 8: caixa de resposta + ligação da fala ao Alfred ═══ */
+const entrada=document.getElementById('entrada');
+const speakDot=document.getElementById('speak-dot');
+const respostaBox=document.getElementById('resposta');
+let historico=[];
+let aEnviar=false;
+
+function mostrarResposta(texto){
+  if(!texto){ respostaBox.classList.remove('show'); return; }
+  respostaBox.textContent=texto;
+  respostaBox.classList.add('show');
+}
+
+entrada.addEventListener('keydown', async e=>{
+  if(e.key!=='Enter' || aEnviar) return;
+  const mensagem=entrada.value.trim();
+  if(!mensagem) return;
+  entrada.value='';
+  aEnviar=true;
+  entrada.disabled=true;
+  speakDot.classList.remove('on'); speakDot.classList.add('busy');
+  try{
+    const r=await fetch('/api/alfred/chat',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({mensagem, historico})
+    });
+    const d=await r.json();
+    if(d.erro){
+      mostrarResposta('Erro: '+d.erro);
+    } else if(d.pendente){
+      abrirModal(d.pendente);
+      if(d.resposta) mostrarResposta(d.resposta);
+    } else {
+      if(d.historico) historico=d.historico;
+      mostrarResposta(d.resposta||'');
+    }
+    speakDot.classList.remove('busy'); speakDot.classList.add('on');
+  }catch(err){
+    speakDot.classList.remove('busy','on');
+    mostrarResposta('Não consigo falar com o Alfred agora — a estação está ligada?');
+  }finally{
+    aEnviar=false;
+    entrada.disabled=false;
+    entrada.focus();
+  }
+});
 </script>
 </body>
 </html>
