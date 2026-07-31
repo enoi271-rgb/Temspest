@@ -2,394 +2,358 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<title>Alfred — TEMSPEST</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alfred</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg-0:#0a0c08; --bg-1:#12150f; --bg-2:#181c14;
-    --ink:#e7e4d6; --ink-dim:#9a9c8c; --ink-faint:#5f6355;
-    --green:#8fb35a; --amber:#d99a3e; --red:#c04a34; --blue:#78b4e6;
+    --ink:#050608; --line:rgba(255,255,255,.09); --mist:#8B98A8; --mist-dim:#4E5A64;
+    --serif:'Spectral',Georgia,serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
   }
-  *{box-sizing:border-box;}
-  html,body{
-    margin:0; padding:0; width:100%; height:100%; overflow:hidden;
-    background:radial-gradient(ellipse at 50% 40%, #14170f 0%, var(--bg-0) 70%);
-    color:var(--ink); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  }
-  #stage{ position:fixed; inset:0; }
-  canvas{ position:absolute; inset:0; width:100%; height:100%; cursor:default; }
+  *{box-sizing:border-box;margin:0;}
+  html,body{background:var(--ink);height:100%;overflow:hidden;}
+  body{color:var(--mist);font-family:var(--mono);-webkit-font-smoothing:antialiased;}
+  :focus-visible{outline:1px solid var(--mist);outline-offset:3px;}
 
-  .label-top{
-    position:fixed; top:16px; left:20px; font-size:11px; letter-spacing:.18em;
-    color:var(--ink-faint); text-transform:uppercase; pointer-events:none;
-    display:flex; flex-direction:column; gap:2px;
-  }
-  .label-top b{ color:var(--amber); font-size:12px; letter-spacing:.14em; }
+  .stage{position:relative;width:100%;height:100vh;}
+  #cosmos{position:absolute;inset:0;display:block;width:100%;height:100%;}
 
-  #btn-options{
-    position:fixed; top:16px; right:20px; background:var(--bg-1); color:var(--ink-dim);
-    border:1px solid var(--bg-2); border-radius:6px; padding:7px 12px; font-size:11px;
-    letter-spacing:.05em; cursor:pointer; font-family:inherit;
-  }
-  #btn-options:hover{ border-color:var(--amber); color:var(--amber); }
+  .id{position:absolute;top:22px;left:26px;z-index:5;pointer-events:none;}
+  .id .nome{font-family:var(--serif);font-weight:300;font-size:15px;letter-spacing:.14em;
+    color:rgba(255,255,255,.55);text-transform:uppercase;}
+  .id .hora{font-size:10.5px;letter-spacing:.14em;color:var(--mist-dim);margin-top:3px;}
 
-  /* ---- painel lateral: tab de opcoes ---- */
-  #panel-options{
-    position:fixed; top:0; right:0; height:100%; width:300px;
-    background:rgba(18,21,15,.92); backdrop-filter:blur(6px);
-    border-left:1px solid var(--bg-2); transform:translateX(100%);
-    transition:transform .25s ease; padding:56px 0 0 0; overflow:hidden;
-    display:flex; flex-direction:column;
-  }
-  #panel-options.open{ transform:translateX(0); }
-  #panel-options h3{
-    font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint);
-    margin:0; padding:0 16px 10px 16px;
-  }
-  #list-options{ overflow-y:auto; flex:1; padding:0 8px 16px 8px; }
-  .opt-item{
-    padding:8px 10px; border-radius:6px; margin-bottom:4px; cursor:pointer;
-    font-size:11px; color:var(--ink-dim); border:1px solid transparent;
-  }
-  .opt-item:hover{ background:var(--bg-2); }
-  .opt-item.sel{ border-color:var(--amber); color:var(--ink); background:var(--bg-2); }
-  .opt-item .t1{ color:var(--amber); font-size:10px; }
-  .opt-item .t2{ color:var(--ink-faint); font-size:9px; }
+  .tabstrip{position:absolute;top:80px;right:0;z-index:6;display:flex;flex-direction:column;gap:2px;}
+  .tab{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--mist-dim);background:rgba(6,9,12,.6);border:1px solid var(--line);border-right:none;
+    padding:10px 13px;cursor:pointer;border-radius:3px 0 0 3px;
+    transition:color .15s,background .15s;text-align:right;}
+  .tab:hover{color:#D8E2E8;}
+  .tab.active{color:#fff;background:rgba(6,9,12,.9);border-color:rgba(255,255,255,.22);}
 
-  /* ---- painel de detalhe (item selecionado, orbita ou lista) ---- */
-  #panel-detail{
-    position:fixed; left:50%; bottom:88px; transform:translate(-50%,12px);
-    width:min(520px,86vw); max-height:38vh; overflow-y:auto;
-    background:rgba(18,21,15,.95); border:1px solid var(--bg-2); border-radius:10px;
-    padding:14px 16px; opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease;
+  .sidepanel{position:absolute;top:80px;right:92px;z-index:5;width:238px;
+    background:rgba(6,9,12,.86);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:3px;padding:16px 17px;
+    opacity:0;transform:translateX(8px);pointer-events:none;
+    transition:opacity .22s ease,transform .22s ease;}
+  .sidepanel.show{opacity:1;transform:translateX(0);pointer-events:auto;}
+  @media(max-width:640px){
+    .sidepanel{right:70px;width:min(230px,58vw);}
+    .tab{padding:9px 10px;font-size:9px;}
   }
-  #panel-detail.open{ opacity:1; pointer-events:auto; transform:translate(-50%,0); }
-  #panel-detail .hd{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-  #panel-detail .tipo{ color:var(--amber); font-size:12px; }
-  #panel-detail .ts{ color:var(--ink-faint); font-size:10px; }
-  #panel-detail .close{ background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:14px; }
-  #panel-detail pre{ margin:0; white-space:pre-wrap; word-break:break-word; font-size:11.5px; color:var(--ink-dim); }
-  #panel-detail .origem-destino{ font-size:10px; color:var(--ink-faint); margin-bottom:6px; }
-  #panel-detail .origem-destino b{ color:var(--blue); }
-  #panel-detail .origem-destino .d{ color:var(--green); }
 
-  /* ---- chat minimizado ---- */
-  #chat-bar{
-    position:fixed; left:50%; bottom:20px; transform:translateX(-50%);
-    display:flex; align-items:center; gap:8px;
-    background:var(--bg-1); border:1px solid var(--bg-2); border-radius:999px;
-    padding:8px 8px 8px 18px; width:min(460px,84vw); transition:width .2s ease;
-  }
-  #chat-bar input{
-    flex:1; background:transparent; border:none; outline:none; color:var(--ink);
-    font-family:inherit; font-size:12px;
-  }
-  #chat-bar input::placeholder{ color:var(--ink-faint); }
-  #chat-send, #chat-toggle{
-    background:var(--bg-2); border:1px solid var(--bg-2); color:var(--ink-dim);
-    border-radius:999px; width:30px; height:30px; cursor:pointer; font-size:13px;
-    display:flex; align-items:center; justify-content:center; flex-shrink:0;
-  }
-  #chat-send:hover, #chat-toggle:hover{ border-color:var(--green); color:var(--green); }
+  .r-title{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--mist-dim);margin-bottom:10px;}
+  .row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,.05);}
+  .row:last-child{border:none;}
+  .dot{width:5px;height:5px;border-radius:50%;flex:none;}
+  .dot.on{background:#fff;box-shadow:0 0 6px rgba(255,255,255,.7);}
+  .dot.off{background:var(--mist-dim);}
+  .nm{flex:1;color:#D8E2E8;}
+  .nt{font-size:9px;color:var(--mist-dim);}
 
-  #chat-log{
-    position:fixed; left:50%; bottom:70px; transform:translate(-50%,8px);
-    width:min(460px,84vw); max-height:0; overflow:hidden; opacity:0;
-    background:rgba(18,21,15,.95); border:1px solid var(--bg-2); border-radius:10px;
-    transition:max-height .2s ease, opacity .2s ease, transform .2s ease;
-  }
-  #chat-log.open{ max-height:220px; opacity:1; transform:translate(-50%,0); overflow-y:auto; }
-  #chat-log .msg{ padding:8px 12px; border-bottom:1px solid var(--bg-1); font-size:11.5px; }
-  #chat-log .msg .from-user{ color:var(--blue); }
-  #chat-log .msg .from-alfred{ color:var(--amber); }
-  #chat-log .msg p{ margin:3px 0 0 0; color:var(--ink-dim); }
-  #chat-log .empty{ padding:14px; color:var(--ink-faint); font-size:11px; }
+  .tier-row{display:grid;grid-template-columns:14px 1fr auto;gap:8px;padding:5px 0;font-size:10.5px;border-bottom:1px solid rgba(255,255,255,.05);}
+  .tier-row:last-child{border:none;}
+  .tier-row b{font-family:var(--serif);color:var(--mist-dim);font-weight:300;}
+  .tier-row .c{font-size:8.5px;color:var(--mist-dim);text-transform:uppercase;letter-spacing:.05em;}
 
-  .status{
-    position:fixed; bottom:60px; left:20px; font-size:10px; color:var(--ink-faint);
-    letter-spacing:.04em; pointer-events:none;
-  }
+  .fev{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:10.5px;}
+  .fev:last-child{border:none;}
+  .fev-top{display:flex;justify-content:space-between;gap:8px;}
+  .fev-type{color:#D8E2E8;}
+  .fev-ts{color:var(--mist-dim);font-size:9px;}
+  .fev-route{font-size:9px;color:var(--mist-dim);margin-top:2px;}
+  .vazio{font-size:10.5px;color:var(--mist-dim);line-height:1.6;}
+
+  .speak{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:7;
+    display:flex;align-items:center;gap:10px;
+    background:rgba(6,9,12,.66);border:1px solid var(--line);border-radius:20px;
+    padding:9px 14px 9px 16px;width:min(430px,74vw);backdrop-filter:blur(6px);}
+  .speak input{flex:1;background:transparent;border:none;color:#E8F0F2;font-family:var(--serif);
+    font-style:italic;font-size:13px;outline:none;}
+  .speak input::placeholder{color:var(--mist-dim);font-style:italic;}
+  .speak-dot{width:6px;height:6px;border-radius:50%;background:var(--mist-dim);flex:none;}
+
+  @media(prefers-reduced-motion:reduce){.sidepanel{transition:none;}}
 </style>
 </head>
 <body>
+<div class="stage" id="stage">
+  <canvas id="cosmos"></canvas>
 
-<div class="label-top"><b>ALFRED</b><span id="birth-line">— a acordar —</span></div>
-<button id="btn-options">☰ Órbita / Opções</button>
-<div class="status" id="status">a ligar ao Event Bus…</div>
-
-<div id="stage">
-  <canvas id="cv"></canvas>
-</div>
-
-<div id="panel-options">
-  <h3>Elementos em órbita</h3>
-  <div id="list-options"></div>
-</div>
-
-<div id="panel-detail">
-  <div class="hd">
-    <span class="tipo" id="det-tipo"></span>
-    <button class="close" id="det-close">✕</button>
+  <div class="id">
+    <div class="nome">Alfred</div>
+    <div class="hora" id="relogio">—:—</div>
   </div>
-  <div class="ts" id="det-ts"></div>
-  <div class="origem-destino" id="det-od"></div>
-  <pre id="det-body"></pre>
-</div>
 
-<div id="chat-log"></div>
-<div id="chat-bar">
-  <input id="chat-input" placeholder="Fala com o Alfred…" maxlength="400">
-  <button id="chat-toggle" title="Mostrar/ocultar histórico">▲</button>
-  <button id="chat-send" title="Enviar">➤</button>
+  <div class="tabstrip">
+    <div class="tab" data-p="divisoes" role="button" tabindex="0">Divisões</div>
+    <div class="tab" data-p="tiers" role="button" tabindex="0">Tiers</div>
+    <div class="tab" data-p="bus" role="button" tabindex="0">Event Bus</div>
+  </div>
+
+  <div class="sidepanel" data-panel="divisoes">
+    <div class="r-title">Agentes e divisões</div>
+    <div class="row"><span class="dot on"></span><span class="nm">TEMSPEST AI OS</span><span class="nt">9 salas</span></div>
+    <div class="row"><span class="dot off"></span><span class="nm">Casa</span><span class="nt">vazio</span></div>
+    <div class="row"><span class="dot on"></span><span class="nm">R1 Criação</span><span class="nt">—</span></div>
+    <div class="row"><span class="dot on"></span><span class="nm">R4 Financeiro</span><span class="nt">—</span></div>
+  </div>
+
+  <div class="sidepanel" data-panel="tiers">
+    <div class="r-title">Tiers &middot; Artigo VII</div>
+    <div class="tier-row"><b>1</b><span>Informar / sugerir</span><span class="c">livre</span></div>
+    <div class="tier-row"><b>2</b><span>Notas, rascunhos</span><span class="c">sem confirmar</span></div>
+    <div class="tier-row"><b>3</b><span>Rotina, agendar</span><span class="c">1.ª vez</span></div>
+    <div class="tier-row"><b>4</b><span>Dinheiro / dados</span><span class="c">confirmar sempre</span></div>
+  </div>
+
+  <div class="sidepanel" data-panel="bus">
+    <div class="r-title">Event Bus</div>
+    <div id="feed"><div class="vazio">A ler…</div></div>
+  </div>
+
+  <div class="speak">
+    <input type="text" id="entrada" placeholder="fala com o Alfred…" disabled aria-label="Falar com o Alfred">
+    <span class="speak-dot" id="speak-dot" title="ligação à IA por ativar"></span>
+  </div>
 </div>
 
 <script>
-/* ======================================================================
-   ALFRED — nascimento
-   Regra da Constituição (biblia/vol1-fundacao.md): "Da forma — nunca te
-   representes ou descrevas como uma forma geométrica fechada e estática".
-   Por isso o Alfred nunca é desenhado como um círculo/ícone sólido: é uma
-   nuvem de partículas dispersas dentro de uma bolha invisível.
-   Cada elemento que ele produz (eventos do Event Bus + trocas de chat)
-   orbita à volta dessa nuvem, e pode ser escolhido tanto clicando na
-   órbita como pela tab de opções lateral.
-   ====================================================================== */
+'use strict';
 
-const cv = document.getElementById('cv');
-const ctx = cv.getContext('2d');
-let W, H, CX, CY;
+function relogio(){
+  const d=new Date();
+  document.getElementById('relogio').textContent=
+    String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+relogio(); setInterval(relogio,1000);
+
+function abrirPainel(tab){
+  const alvo=tab.dataset.p, ativo=tab.classList.contains('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sidepanel').forEach(p=>p.classList.remove('show'));
+  if(!ativo){
+    tab.classList.add('active');
+    document.querySelector('.sidepanel[data-panel="'+alvo+'"]').classList.add('show');
+  }
+}
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>abrirPainel(tab));
+  tab.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); abrirPainel(tab);} });
+});
+
+const cv=document.getElementById('cosmos'), cx=cv.getContext('2d');
+const reduzir=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W,H,DPR,RAIO;
+
 function resize(){
-  W = cv.width = window.innerWidth;
-  H = cv.height = window.innerHeight;
-  CX = W/2; CY = H*0.42;
-}
-window.addEventListener('resize', resize);
-resize();
-
-document.getElementById('birth-line').textContent =
-  '— nascido em ' + new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'long',year:'numeric'}) + ' —';
-
-/* ---------------- nuvem de particulas (Alfred, minimizado) ---------------- */
-const BUBBLE_R = 54; // raio da "bolha invisivel"
-const particles = [];
-for(let i=0;i<160;i++){
-  particles.push({
-    a: Math.random()*Math.PI*2,
-    r: Math.random()*BUBBLE_R,
-    speed: (Math.random()*0.6+0.15) * (Math.random()<0.5?-1:1),
-    driftR: Math.random()*0.6+0.2,
-    size: Math.random()*1.6+0.4,
-    hue: Math.random()<0.7 ? '231,228,214' : '217,154,62' // ink / amber, ocasional
-  });
-}
-function drawAlfred(t){
-  ctx.save();
-  ctx.translate(CX, CY);
-  // brilho suave da bolha invisivel (sem contorno rigido)
-  const glow = ctx.createRadialGradient(0,0,0,0,0,BUBBLE_R*1.9);
-  glow.addColorStop(0,'rgba(217,154,62,0.06)');
-  glow.addColorStop(1,'rgba(217,154,62,0)');
-  ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(0,0,BUBBLE_R*1.9,0,Math.PI*2); ctx.fill();
-
-  particles.forEach(p=>{
-    const ang = p.a + t*0.0003*p.speed;
-    const rad = p.r + Math.sin(t*0.0006*p.driftR + p.a)*6;
-    const x = Math.cos(ang)*rad;
-    const y = Math.sin(ang)*rad*0.9;
-    const alpha = 0.25 + 0.5*Math.abs(Math.sin(t*0.0007+p.a));
-    ctx.beginPath();
-    ctx.fillStyle = `rgba(${p.hue},${alpha.toFixed(2)})`;
-    ctx.arc(x,y,p.size,0,Math.PI*2);
-    ctx.fill();
-  });
-  ctx.restore();
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  W=window.innerWidth; H=window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR;
+  cx.setTransform(DPR,0,0,DPR,0,0);
+  RAIO=Math.min(W,H)*0.30;
 }
 
-/* ---------------- itens em orbita (eventos + trocas de chat) ---------------- */
-let items = []; // {id, kind:'event'|'chat', tipo, ts, origem, destino, payload, ring, ang0, speed}
-let selectedId = null;
-const seenIds = new Set();
+/* Amostra a letra, mede a tinta real, e re-mapeia para uma caixa de proporção
+   controlada e centrada — é isto que impede o E de sair alto e estreito. */
+function pontosDaLetra(letra,quantos){
+  const S=520;
+  const off=document.createElement('canvas');
+  off.width=S; off.height=S;
+  const o=off.getContext('2d');
+  o.fillStyle='#fff';
+  o.font='900 '+Math.floor(S*0.78)+'px Arial, Helvetica, sans-serif';
+  o.textAlign='center'; o.textBaseline='middle';
+  o.fillText(letra, S/2, S/2);
 
-function ringFor(index){ return 1 + Math.floor(index/8); } // 8 itens por anel, depois abre novo anel
-
-function addItem(it){
-  if(seenIds.has(it.id)) return;
-  seenIds.add(it.id);
-  const idx = items.length;
-  it.ring = ringFor(idx);
-  it.ang0 = Math.random()*Math.PI*2;
-  it.speed = (0.00012 + Math.random()*0.00006) * (idx%2===0?1:-1);
-  items.push(it);
-  renderOptionsList();
-}
-
-function itemPos(it, t){
-  const radius = BUBBLE_R + 46*it.ring;
-  const ang = it.ang0 + t*it.speed;
-  return { x: CX + Math.cos(ang)*radius, y: CY + Math.sin(ang)*radius*0.86, radius };
-}
-
-function colorForTipo(it){
-  if(it.kind==='chat') return '120,180,230'; // blue
-  if((it.tipo||'').startsWith('entry')) return '143,179,90'; // green
-  if((it.tipo||'').startsWith('video')) return '217,154,62'; // amber
-  return '231,228,214';
-}
-
-function drawOrbits(t){
-  // aneis muito subtis (nao sao a "forma" do Alfred, so guias de orbita)
-  const maxRing = items.reduce((m,it)=>Math.max(m,it.ring),0);
-  ctx.save();
-  ctx.translate(CX,CY);
-  for(let r=1;r<=maxRing;r++){
-    const radius = BUBBLE_R + 46*r;
-    ctx.beginPath();
-    ctx.strokeStyle = 'rgba(95,99,85,0.12)';
-    ctx.lineWidth = 1;
-    ctx.ellipse(0,0,radius,radius*0.86,0,0,Math.PI*2);
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  items.forEach(it=>{
-    const p = itemPos(it,t);
-    const col = colorForTipo(it);
-    const isSel = it.id===selectedId;
-    ctx.beginPath();
-    ctx.fillStyle = `rgba(${col},${isSel?1:0.85})`;
-    ctx.arc(p.x,p.y, isSel?6:3.4, 0, Math.PI*2);
-    ctx.fill();
-    if(isSel){
-      ctx.beginPath();
-      ctx.strokeStyle = `rgba(${col},0.5)`;
-      ctx.lineWidth = 1.5;
-      ctx.arc(p.x,p.y, 11, 0, Math.PI*2);
-      ctx.stroke();
+  const d=o.getImageData(0,0,S,S).data;
+  const brutos=[];
+  for(let y=0;y<S;y+=2){
+    for(let x=0;x<S;x+=2){
+      if(d[(y*S+x)*4+3]>90) brutos.push([x,y]);
     }
-    it._pos = p; // cache para deteção de clique
-  });
+  }
+  if(!brutos.length) return [];
+
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(const [x,y] of brutos){
+    if(x<minX)minX=x; if(x>maxX)maxX=x;
+    if(y<minY)minY=y; if(y>maxY)maxY=y;
+  }
+  const lw=maxX-minX||1, lh=maxY-minY||1;
+
+  const altura=Math.min(W,H)*0.46;
+  const escala=altura/lh;
+  const larg=lw*escala;
+
+  const passo=Math.max(1,Math.floor(brutos.length/quantos));
+  const pts=[];
+  for(let i=0;i<brutos.length;i+=passo){
+    const [x,y]=brutos[i];
+    pts.push({
+      x: W/2 - larg/2 + (x-minX)*escala + (Math.random()-0.5)*2,
+      y: H/2 - altura/2 + (y-minY)*escala + (Math.random()-0.5)*2
+    });
+  }
+  return pts;
 }
 
-function loop(t){
-  ctx.clearRect(0,0,W,H);
-  drawOrbits(t);
-  drawAlfred(t);
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
+const N=reduzir?280:680;
+const P=[];
 
-/* ---------------- click na orbita ---------------- */
-cv.addEventListener('click', (ev)=>{
-  const rect = cv.getBoundingClientRect();
-  const mx = ev.clientX-rect.left, my = ev.clientY-rect.top;
-  let best=null, bestD=18;
-  items.forEach(it=>{
-    if(!it._pos) return;
-    const d = Math.hypot(it._pos.x-mx, it._pos.y-my);
-    if(d<bestD){ bestD=d; best=it; }
-  });
-  if(best) selectItem(best.id);
-});
-
-/* ---------------- painel de detalhe ---------------- */
-const panelDetail = document.getElementById('panel-detail');
-function selectItem(id){
-  selectedId = id;
-  const it = items.find(i=>i.id===id);
-  if(!it) return;
-  document.getElementById('det-tipo').textContent = it.kind==='chat' ? 'chat.troca' : it.tipo;
-  document.getElementById('det-ts').textContent = new Date(it.ts*1000).toLocaleString('pt-PT');
-  document.getElementById('det-od').innerHTML = it.kind==='chat'
-    ? '<b>utilizador</b> → <span class="d">alfred (mock, sem backend real ainda)</span>'
-    : '<b>'+(it.origem||'')+'</b> → <span class="d">'+(it.destino||'')+'</span>';
-  document.getElementById('det-body').textContent = JSON.stringify(it.payload||{}, null, 2);
-  panelDetail.classList.add('open');
-  renderOptionsList();
-}
-document.getElementById('det-close').addEventListener('click', ()=>{
-  panelDetail.classList.remove('open'); selectedId=null; renderOptionsList();
-});
-
-/* ---------------- tab de opcoes (lista lateral) ---------------- */
-const btnOptions = document.getElementById('btn-options');
-const panelOptions = document.getElementById('panel-options');
-btnOptions.addEventListener('click', ()=> panelOptions.classList.toggle('open'));
-
-function renderOptionsList(){
-  const list = document.getElementById('list-options');
-  if(!items.length){ list.innerHTML = '<div class="opt-item" style="color:var(--ink-faint);cursor:default;">Ainda sem elementos em órbita.</div>'; return; }
-  list.innerHTML = items.slice().reverse().map(it=>{
-    const label = it.kind==='chat' ? ('chat: '+ (it.payload.mensagem||'').slice(0,40)) : it.tipo;
-    return '<div class="opt-item '+(it.id===selectedId?'sel':'')+'" data-id="'+it.id+'">'
-      + '<div class="t1">'+label+'</div>'
-      + '<div class="t2">'+new Date(it.ts*1000).toLocaleTimeString('pt-PT')+'</div>'
-      + '</div>';
-  }).join('');
-  list.querySelectorAll('.opt-item[data-id]').forEach(el=>{
-    el.addEventListener('click', ()=> selectItem(el.getAttribute('data-id')));
-  });
-}
-renderOptionsList();
-
-/* ---------------- Event Bus real (GET /api/alfred/events) ---------------- */
-async function pollEvents(){
-  const status = document.getElementById('status');
-  try{
-    const res = await fetch('/api/alfred/events');
-    const data = await res.json();
-    const eventos = (data && data.eventos) || [];
-    eventos.forEach(e=> addItem({
-      id: 'evt-'+e.id, kind:'event', tipo: e.tipo, ts: e.ts,
-      origem: e.origem, destino: e.destino, payload: e.payload
-    }));
-    status.textContent = items.filter(i=>i.kind==='event').length + ' evento(s) do Event Bus · ' +
-      items.filter(i=>i.kind==='chat').length + ' troca(s) de chat';
-  }catch(err){
-    status.textContent = 'Event Bus indisponível (' + err + ')';
+function inicializar(){
+  const alvos=pontosDaLetra('E',N);
+  P.length=0;
+  for(let i=0;i<N;i++){
+    const ang=Math.random()*6.283, r=Math.max(W,H)*0.75*Math.sqrt(Math.random());
+    const alvo=alvos.length?alvos[i%alvos.length]:{x:W/2,y:H/2};
+    const a2=Math.random()*6.283, r2=RAIO*Math.cbrt(Math.random());
+    P.push({
+      x:W/2+Math.cos(ang)*r, y:H/2+Math.sin(ang)*r,
+      tx:alvo.x, ty:alvo.y,
+      dx:Math.cos(a2)*r2, dy:Math.sin(a2)*r2*0.78,
+      vx:(Math.random()-0.5)*0.32, vy:(Math.random()-0.5)*0.32,
+      brilho:0.35+Math.random()*0.55, fase:Math.random()*6.283
+    });
   }
 }
-pollEvents();
-setInterval(pollEvents, 15000);
 
-/* ---------------- chat minimizado (so interface, sem backend de IA ainda) ---------------- */
-const chatInput = document.getElementById('chat-input');
-const chatLog = document.getElementById('chat-log');
-const chatToggle = document.getElementById('chat-toggle');
-let chatOpen = false;
-chatToggle.addEventListener('click', ()=>{
-  chatOpen = !chatOpen;
-  chatLog.classList.toggle('open', chatOpen);
-  chatToggle.textContent = chatOpen ? '▼' : '▲';
-  renderChatLog();
-});
+resize(); inicializar();
+window.addEventListener('resize',()=>{ resize(); if(fase==='formar'||fase==='segurar') inicializar(); });
 
-function renderChatLog(){
-  const chats = items.filter(i=>i.kind==='chat');
-  if(!chats.length){ chatLog.innerHTML = '<div class="empty">Ainda sem conversa. O backend de IA do Alfred ainda não está ligado aqui — isto regista a troca, mas a resposta é um placeholder.</div>'; return; }
-  chatLog.innerHTML = chats.map(c=>
-    '<div class="msg"><span class="from-user">tu</span><p>'+escapeHtml(c.payload.mensagem)+'</p></div>'+
-    '<div class="msg"><span class="from-alfred">alfred</span><p>'+escapeHtml(c.payload.resposta)+'</p></div>'
-  ).join('');
-  chatLog.scrollTop = chatLog.scrollHeight;
+let fase = reduzir ? 'cosmos' : 'formar';
+let faseT0=performance.now();
+const DUR={formar:2000,segurar:1100,dispersar:1700};
+
+const CORES={
+  repouso:[210,220,232],
+  'r1-criacao':[120,190,235],
+  'r2-negocios':[217,170,90],
+  'r3-edicao':[150,180,215],
+  'r4-financeiro':[140,210,150],
+  'r5-publicidade':[190,150,225],
+  'r6-web':[110,175,220],
+  'r7-atendimento':[230,170,110],
+  'r8-produtos':[225,205,110],
+  alerta:[224,90,78]
+};
+let corAlvo=CORES.repouso.slice(), corAtual=CORES.repouso.slice(), trabalhoT=-1;
+
+function ativarTrabalho(div){
+  corAlvo=(CORES[div]||CORES.repouso).slice();
+  trabalhoT=performance.now();
 }
-function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-
-function sendChat(){
-  const msg = chatInput.value.trim();
-  if(!msg) return;
-  const resposta = 'Recebido — ainda sem ligação a um modelo real neste ecrã. Isto fica em órbita como registo da troca.';
-  addItem({
-    id: 'chat-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
-    kind:'chat', tipo:'chat.troca', ts: Math.floor(Date.now()/1000),
-    payload:{ mensagem: msg, resposta: resposta }
-  });
-  chatInput.value='';
-  if(!chatOpen){ chatOpen=true; chatLog.classList.add('open'); chatToggle.textContent='▼'; }
-  renderChatLog();
+function tickCor(){
+  if(trabalhoT>0 && performance.now()-trabalhoT>4000) corAlvo=CORES.repouso.slice();
+  for(let i=0;i<3;i++) corAtual[i]+=(corAlvo[i]-corAtual[i])*0.03;
 }
-document.getElementById('chat-send').addEventListener('click', sendChat);
-chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter') sendChat(); });
+
+let faisca=-1e9;
+function desenhar(now){
+  cx.clearRect(0,0,W,H);
+  tickCor();
+  const cor=corAtual.map(v=>Math.round(v));
+  const dt=now-faseT0;
+
+  if(fase==='formar' && dt>DUR.formar){ fase='segurar'; faseT0=now; }
+  else if(fase==='segurar' && dt>DUR.segurar){ fase='dispersar'; faseT0=now; }
+  else if(fase==='dispersar' && dt>DUR.dispersar){ fase='cosmos'; }
+
+  const CX=W/2, CY=H/2;
+
+  for(const p of P){
+    if(fase==='formar'||fase==='segurar'){
+      const k = fase==='formar' ? Math.min(1,dt/DUR.formar) : 1;
+      const e = 1-Math.pow(1-k,3);
+      p.x += (p.tx-p.x)*0.16*e;
+      p.y += (p.ty-p.y)*0.16*e;
+      p.b = fase==='segurar' ? 0.95 : 0.45+e*0.55;
+    } else if(fase==='dispersar'){
+      const k=Math.min(1,(now-faseT0)/DUR.dispersar);
+      p.x += ((CX+p.dx)-p.x)*0.045*k;
+      p.y += ((CY+p.dy)-p.y)*0.045*k;
+      p.b = p.brilho;
+    } else {
+      p.x += p.vx; p.y += p.vy;
+      const ax=p.x-CX, ay=(p.y-CY)/0.78, d=Math.hypot(ax,ay);
+      if(d>RAIO){
+        const k=RAIO/d;
+        p.x=CX+ax*k; p.y=CY+ay*k*0.78;
+        p.vx=-p.vx*0.9; p.vy=-p.vy*0.9;
+      }
+      p.b=p.brilho;
+    }
+
+    p.fase+=0.013;
+    const a=Math.max(0,Math.min(1,(p.b||p.brilho)*(0.7+Math.sin(p.fase)*0.3)));
+    cx.fillStyle='rgba('+cor[0]+','+cor[1]+','+cor[2]+','+a.toFixed(3)+')';
+    cx.beginPath(); cx.arc(p.x,p.y,fase==='segurar'?2:1.6,0,6.283); cx.fill();
+  }
+
+  const df=(now-faisca)/1200;
+  if(fase==='cosmos' && df>=0 && df<1){
+    const y=H*0.15+df*H*0.7;
+    cx.fillStyle='rgba('+cor[0]+','+cor[1]+','+cor[2]+','+(0.10*(1-df))+')';
+    cx.fillRect(0,y-40,W,80);
+  }
+
+  requestAnimationFrame(desenhar);
+}
+requestAnimationFrame(desenhar);
+
+/* ═══ Event Bus real ═══ */
+const DIV={'r1-criacao':'R1 Criação','r2-negocios':'R2 Negócios','r3-edicao':'R3 Edição',
+  'r4-financeiro':'R4 Financeiro','r5-publicidade':'R5 Publicidade','r6-web':'R6 Web',
+  'r7-atendimento':'R7 Atendimento','r8-produtos':'R8 Produtos'};
+function nomeDiv(r){ if(!r||r==='*')return 'qualquer divisão'; const p=String(r).split('.').pop(); return DIV[p]||p; }
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function quando(ts){const s=Math.floor(Date.now()/1000)-ts; if(s<60)return 'agora'; if(s<3600)return Math.floor(s/60)+' min'; if(s<86400)return Math.floor(s/3600)+' h'; return Math.floor(s/86400)+' d';}
+
+let vistos=new Set(), primeira=true;
+
+function pintar(eventos){
+  const host=document.getElementById('feed');
+  if(!eventos.length){
+    host.innerHTML='<div class="vazio">Sem eventos ainda. Regista um movimento no razão ou gera hype — a linha aparece aqui.</div>';
+    return;
+  }
+  host.innerHTML=eventos.slice(-12).reverse().map(e=>{
+    const carga=Object.entries(e.payload||{}).map(([k,v])=>esc(k)+': '+esc(v)).join('   ');
+    return '<div class="fev"><div class="fev-top"><span class="fev-type">'+esc(e.tipo||'—')+'</span>'+
+      '<span class="fev-ts">'+quando(e.ts||0)+'</span></div>'+
+      '<div class="fev-route">'+esc(nomeDiv(e.origem))+' → '+esc(nomeDiv(e.destino))+(carga?' · '+carga:'')+'</div></div>';
+  }).join('');
+
+  for(const e of eventos){
+    if(e.id && !vistos.has(e.id)){
+      vistos.add(e.id);
+      if(!primeira){
+        faisca=performance.now();
+        const d=String(e.origem||'').split('.').pop();
+        ativarTrabalho(d);
+      }
+    }
+  }
+  primeira=false;
+}
+
+async function ler(){
+  try{
+    const r=await fetch('/api/alfred/events',{cache:'no-store'});
+    if(!r.ok) throw new Error(r.status);
+    const d=await r.json();
+    if(!Array.isArray(d.eventos)) throw new Error('formato');
+    if(corAlvo===CORES.alerta) corAlvo=CORES.repouso.slice();
+    pintar(d.eventos);
+  }catch(err){
+    corAlvo=CORES.alerta.slice(); trabalhoT=performance.now();
+    document.getElementById('feed').innerHTML=
+      '<div class="vazio">Não consigo ler o Event Bus. A estação está ligada?</div>';
+  }
+}
+ler(); setInterval(ler,6000);
 </script>
 </body>
 </html>
